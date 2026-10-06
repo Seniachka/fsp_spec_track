@@ -8,6 +8,8 @@ from app.errors import ApiError
 from app.models import (
     Application,
     AssessmentSession,
+    AssessmentSessionItem,
+    CandidateProfile,
     Company,
     Consent,
     Experience,
@@ -19,6 +21,7 @@ from app.models import (
 )
 from app.security import utcnow
 from app.services.assessment import accept_intern, assemble, confirm_pending, policy, public_session, submit_session
+from app.services.code_runner import execute_python, format_python, lint_python
 from app.services.present import candidate_self, replace_stack
 
 router = APIRouter(tags=["candidate"])
@@ -60,6 +63,16 @@ class AnswerIn(BaseModel):
 
 class SubmitIn(BaseModel):
     answers: list[AnswerIn]
+
+
+class RunIn(BaseModel):
+    item_id: int
+    source: str = ""
+    language: str = "python3.12"
+
+
+class SourceIn(BaseModel):
+    source: str = ""
 
 
 def _profile(user: User):
@@ -194,6 +207,50 @@ def submit(session_id: int, body: SubmitIn, user: User = Depends(require_role("c
     if session is None or session.candidate_id != user.id:
         raise ApiError(404, "NOT_FOUND", "Попытка не найдена")
     return submit_session(db, _profile(user), session, [item.model_dump() for item in body.answers])
+
+
+@router.post("/assessments/sessions/{session_id}/run")
+def run_public(session_id: int, body: RunIn, user: User = Depends(require_role("candidate")), db: Session = Depends(get_db)):
+    if body.language != "python3.12":
+        raise ApiError(422, "LANGUAGE_UNAVAILABLE", "Пока доступен только Python 3.12")
+    session = db.get(AssessmentSession, session_id)
+    if session is None or session.candidate_id != user.id:
+        raise ApiError(404, "NOT_FOUND", "Попытка не найдена")
+    if session.status != "started":
+        raise ApiError(409, "SESSION_EXPIRED", "Попытка уже сдана")
+    row = db.get(AssessmentSessionItem, body.item_id)
+    if row is None or row.session_id != session.id:
+        raise ApiError(404, "NOT_FOUND", "Задание не найдено")
+    params = row.params or {}
+    public_tests = list(params.get("public_tests") or [])
+    report = execute_python(body.source, public_tests)
+    cases = []
+    if not report["syntax"]:
+        for test, result in zip(public_tests, report["cases"]):
+            cases.append(
+                {
+                    "args": test.get("args"),
+                    "expected": test.get("expected"),
+                    "passed": bool(result.get("passed")),
+                    "got": result.get("got"),
+                    "error": result.get("error"),
+                }
+            )
+    return {
+        "syntax": report["syntax"],
+        "cases": cases,
+        "hidden_count": len(params.get("hidden") or []),
+    }
+
+
+@router.post("/assessments/code/lint")
+def lint_code(body: SourceIn, user: User = Depends(require_role("candidate"))):
+    return {"diagnostics": lint_python(body.source)}
+
+
+@router.post("/assessments/code/format")
+def format_code(body: SourceIn, user: User = Depends(require_role("candidate"))):
+    return format_python(body.source)
 
 
 @router.get("/me/invitations")

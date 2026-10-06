@@ -269,12 +269,15 @@ def assemble(db: Session, profile: CandidateProfile, spec_code: str, grade_code:
         else:
             variants = list(payload.get("variants") or [])
             variant = rng.choice(variants) if variants else {"public": {}, "hidden": []}
+            public_tests = list(variant.get("public_tests") or [])
+            if not public_tests and variant.get("public"):
+                public_tests = [variant["public"]]
             params.update(
                 {
-                    "language": payload.get("language"),
+                    "language": "python3.12",
                     "signature": payload.get("signature"),
                     "starter": payload.get("starter"),
-                    "public": variant.get("public"),
+                    "public_tests": public_tests,
                     "hidden": variant.get("hidden") or [],
                 }
             )
@@ -319,10 +322,17 @@ def public_session(db: Session, session: AssessmentSession) -> dict:
         if params.get("kind") == "mcq":
             entry["options"] = params.get("options") or []
         else:
-            entry["language"] = params.get("language")
+            entry["language"] = "python3.12"
+            entry["languages"] = [
+                {"code": "python3.12", "title": "Python 3.12", "enabled": True},
+                {"code": "javascript", "title": "JavaScript", "enabled": False},
+                {"code": "go", "title": "Go", "enabled": False},
+                {"code": "java", "title": "Java", "enabled": False},
+            ]
             entry["signature"] = params.get("signature")
             entry["starter"] = params.get("starter")
-            entry["public_example"] = params.get("public")
+            entry["public_tests"] = params.get("public_tests") or []
+            entry["hidden_count"] = len(params.get("hidden") or [])
         if session.status != "started":
             entry["correct"] = item.correct
         public_items.append(entry)
@@ -381,9 +391,11 @@ def submit_session(db: Session, profile: CandidateProfile, session: AssessmentSe
             row.answer = {"choice_id": choice}
         else:
             source = incoming.get("source") or ""
-            hidden = params.get("hidden") or []
-            checks = run_hidden_tests(source, params.get("language") or "python", hidden)
-            ok = bool(checks) and all(checks)
+            public_tests = list(params.get("public_tests") or [])
+            hidden = list(params.get("hidden") or [])
+            suite = public_tests + hidden
+            checks = run_hidden_tests(source, "python3.12", suite)
+            ok = bool(suite) and len(checks) == len(suite) and all(checks)
             row.answer = {"source": source}
         row.correct = ok
         if ok:

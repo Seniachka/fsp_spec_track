@@ -125,8 +125,49 @@ def _consent(db: Session, user_id: int) -> None:
         db.add(Consent(user_id=user_id, doc_type=doc_type, doc_version=DOC_VERSION, accepted_at=now))
 
 
+def refresh_code_bank(db: Session) -> None:
+    """Подменяет банк кода и открытые попытки, чтобы в них были 5 открытых и 15 скрытых тестов."""
+    from sqlalchemy.orm.attributes import flag_modified
+
+    from app.models import AssessmentSession, AssessmentSessionItem
+
+    by_code = {item["code"]: item for item in ITEMS if item["kind"] == "code"}
+    stored = {row.code: row for row in db.query(AssessmentItem).all()}
+    for code, fresh in by_code.items():
+        row = stored.get(code)
+        if row is None:
+            continue
+        row.prompt = fresh["prompt"]
+        row.payload = fresh["payload"]
+        flag_modified(row, "payload")
+    open_slots = (
+        db.query(AssessmentSessionItem)
+        .join(AssessmentSession, AssessmentSession.id == AssessmentSessionItem.session_id)
+        .filter(AssessmentSession.status == "started")
+        .all()
+    )
+    for slot in open_slots:
+        params = dict(slot.params or {})
+        if params.get("kind") != "code":
+            continue
+        bank_item = db.get(AssessmentItem, slot.item_id)
+        if bank_item is None:
+            continue
+        variant = ((bank_item.payload or {}).get("variants") or [{}])[0]
+        params["public_tests"] = variant.get("public_tests") or []
+        params["hidden"] = variant.get("hidden") or []
+        params["language"] = "python3.12"
+        params["starter"] = (bank_item.payload or {}).get("starter")
+        params["signature"] = (bank_item.payload or {}).get("signature")
+        params["prompt"] = bank_item.prompt
+        slot.params = params
+        flag_modified(slot, "params")
+    db.commit()
+
+
 def seed(db: Session) -> None:
     if db.query(User).filter(User.email == "marina@example.com").first():
+        refresh_code_bank(db)
         return
     password_hash = hash_password("demo1234")
     specs = {}
@@ -295,3 +336,4 @@ def seed(db: Session) -> None:
     admin = User(email="admin@example.com", password_hash=password_hash, role="admin", email_verified_at=now)
     db.add(admin)
     db.commit()
+    refresh_code_bank(db)

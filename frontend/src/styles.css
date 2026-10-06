@@ -142,6 +142,39 @@ textarea { min-height: 140px; font-family: ui-monospace, Consolas, monospace; }
 .demo-table td { padding: 8px 0; border-top: 1px solid var(--line); vertical-align: top; }
 .status { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
 
+.exam-nav {
+  position: sticky;
+  top: 73px;
+  z-index: 4;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 12px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+.q-num {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+.q-num.answered { background: #c4bdb3; }
+.q-num.ok { background: var(--ok); color: white; border-color: var(--ok); }
+.q-num.bad { background: var(--red); color: white; border-color: var(--red); }
+.q-num.current { outline: 2px solid var(--ink); outline-offset: 2px; }
+.cases { width: 100%; border-collapse: collapse; }
+.cases th, .cases td { text-align: left; padding: 8px 6px; border-top: 1px solid var(--line); vertical-align: top; font-size: 14px; }
+.cases tr.pass td { background: #e7f6ee; }
+.cases tr.fail td { background: #fdeceb; }
+.cm-editor { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+
 @media (max-width: 860px) {
   .hero, .grid-2, .rank { grid-template-columns: 1fr; }
   .topbar { align-items: flex-start; flex-direction: column; }

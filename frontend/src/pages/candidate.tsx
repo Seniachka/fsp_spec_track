@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, range } from "../api";
+import { CodePad } from "../CodePad";
 
 const STATUS: Record<string, string> = {
   sent: "отправлено",
@@ -63,6 +64,8 @@ export function TestPage() {
   const [choices, setChoices] = useState<Record<number, string>>({});
   const [sources, setSources] = useState<Record<number, string>>({});
   const [result, setResult] = useState<any>(null);
+  const [runs, setRuns] = useState<Record<number, any>>({});
+  const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -119,22 +122,6 @@ export function TestPage() {
     setMe(await api("/me"));
   }
 
-  if (result) {
-    return (
-      <section className="card stack">
-        <p className="eyebrow">Результат</p>
-        <div className="bib">{Math.round(result.score)}</div>
-        <p>{result.outcome === "fail" ? "Заявленный грейд не подтверждён. Сам он не понижен." : "Результат записан."}</p>
-        <ul>{result.review?.map((item: any) => <li key={item.id}>{item.topic}: {item.correct ? "верно" : "неверно"}</li>)}</ul>
-        {result.policy?.can_confirm_pending && <button className="btn" onClick={confirm}>Оставить этот грейд</button>}
-        {result.policy?.can_start_up && <button className="btn-ghost" onClick={() => { setResult(null); setSession(null); setPurpose("up"); setGrade("senior"); }}>Попробовать грейд выше</button>}
-        {result.policy?.can_start_down && <button className="btn-ghost" onClick={() => { setResult(null); setSession(null); setPurpose("down"); setGrade("junior"); }}>Сдать тест на уровень ниже</button>}
-        {result.policy?.can_accept_intern && <button className="btn-ghost" onClick={intern}>Принять полку «Стажёр»</button>}
-        {me?.grade && <Link className="btn-red" to="/c">К категории</Link>}
-      </section>
-    );
-  }
-
   if (!session) {
     return (
       <form className="card stack" onSubmit={start} style={{ maxWidth: 640 }}>
@@ -163,33 +150,108 @@ export function TestPage() {
   }
 
   const item = session.items[step];
-  const last = step === session.items.length - 1;
+  const verdict = new Map((result?.review || []).map((row: any) => [row.id, row.correct]));
+  const run = runs[item.id];
+  const visibleCases = (run?.cases?.length ? run.cases : (item.public_tests || []).map((test: any) => ({ ...test, got: null, passed: null, error: null })));
+
+  function tone(question: any) {
+    if (result) return verdict.get(question.id) ? "ok" : "bad";
+    if (question.kind === "mcq") return choices[question.id] ? "answered" : "";
+    const source = (sources[question.id] ?? "").trim();
+    const starter = (question.starter || "").trim();
+    return source && source !== starter ? "answered" : "";
+  }
+
+  async function runCode() {
+    setRunning(true);
+    setError("");
+    try {
+      const report = await api(`/assessments/sessions/${session.id}/run`, "POST", {
+        item_id: item.id,
+        source: sources[item.id] || "",
+        language: "python3.12",
+      });
+      setRuns({ ...runs, [item.id]: report });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Ошибка");
+    } finally {
+      setRunning(false);
+    }
+  }
+
   return (
-    <section className="card stack">
-      <p className="eyebrow">Вопрос {step + 1} из {session.items.length} · {item.topic}</p>
-      <h2>{item.prompt}</h2>
-      {error && <p className="banner">{error}</p>}
-      {item.kind === "mcq" ? (
-        <div className="stack">
-          {item.options.map((option: any) => (
-            <button type="button" key={option.id} className={choices[item.id] === option.id ? "choice on" : "choice"} onClick={() => setChoices({ ...choices, [item.id]: option.id })}>
-              <b>{option.id}</b><span>{option.text}</span>
-            </button>
-          ))}
-        </div>
-      ) : (
-        <>
-          <p className="muted">{item.signature}</p>
-          {item.public_example && <p className="muted">Открытый пример: {JSON.stringify(item.public_example.args)} → {JSON.stringify(item.public_example.expected)}</p>}
-          <textarea value={sources[item.id] || ""} onChange={(e) => setSources({ ...sources, [item.id]: e.target.value })} />
-        </>
-      )}
-      <div className="actions">
-        {step > 0 && <button className="btn-ghost" type="button" onClick={() => setStep(step - 1)}>Назад</button>}
-        {!last && <button className="btn" type="button" onClick={() => setStep(step + 1)}>Дальше</button>}
-        {last && <button className="btn-red" type="button" onClick={submit}>Сдать</button>}
+    <div className="stack">
+      <div className="exam-nav">
+        {session.items.map((question: any, index: number) => (
+          <button
+            key={question.id}
+            type="button"
+            className={`q-num ${tone(question)} ${index === step ? "current" : ""}`}
+            onClick={() => setStep(index)}
+          >
+            {index + 1}
+          </button>
+        ))}
+        {!result && <button className="btn-red" type="button" onClick={submit} style={{ marginLeft: "auto" }}>Сдать тест</button>}
       </div>
-    </section>
+      {result && (
+        <section className="card stack">
+          <p className="eyebrow">Результат</p>
+          <div className="bib">{Math.round(result.score)}</div>
+          <p>{result.outcome === "fail" ? "Заявленный грейд не подтверждён. Сам он не понижен." : "Результат записан."}</p>
+          <p className="muted">Зелёный номер — задание зачтено, красный — нет. Можно открыть любое.</p>
+          <div className="actions">
+            {result.policy?.can_confirm_pending && <button className="btn" onClick={confirm}>Оставить этот грейд</button>}
+            {result.policy?.can_start_up && <button className="btn-ghost" onClick={() => { setResult(null); setSession(null); setPurpose("up"); setGrade("senior"); }}>Попробовать грейд выше</button>}
+            {result.policy?.can_start_down && <button className="btn-ghost" onClick={() => { setResult(null); setSession(null); setPurpose("down"); setGrade("junior"); }}>Сдать тест на уровень ниже</button>}
+            {result.policy?.can_accept_intern && <button className="btn-ghost" onClick={intern}>Принять полку «Стажёр»</button>}
+            {me?.grade && <Link className="btn-red" to="/c">К категории</Link>}
+          </div>
+        </section>
+      )}
+      <section className="card stack">
+        <p className="eyebrow">Задание {step + 1} из {session.items.length} · {item.topic}</p>
+        <h2>{item.prompt}</h2>
+        {error && <p className="banner">{error}</p>}
+        {item.kind === "mcq" ? (
+          <div className="stack">
+            {item.options.map((option: any) => (
+              <button type="button" key={option.id} className={choices[item.id] === option.id ? "choice on" : "choice"} disabled={Boolean(result)} onClick={() => setChoices({ ...choices, [item.id]: option.id })}>
+                <b>{option.id}</b><span>{option.text}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <>
+            <p className="muted">{item.signature}</p>
+            <CodePad
+              value={sources[item.id] ?? item.starter ?? ""}
+              onChange={(next) => setSources({ ...sources, [item.id]: next })}
+              readOnly={Boolean(result)}
+              running={running}
+              onRun={runCode}
+            />
+            {run?.syntax && <p className="banner">Строка {run.syntax.line}: {run.syntax.message}</p>}
+            <table className="cases">
+              <thead>
+                <tr><th>#</th><th>Вход</th><th>Ожидание</th><th>Факт</th></tr>
+              </thead>
+              <tbody>
+                {visibleCases.map((test: any, index: number) => (
+                  <tr key={index} className={test.passed === true ? "pass" : test.passed === false ? "fail" : ""}>
+                    <td>{index + 1}</td>
+                    <td><code>{JSON.stringify(test.args)}</code></td>
+                    <td><code>{JSON.stringify(test.expected)}</code></td>
+                    <td>{test.error || (test.got === null || test.got === undefined ? "—" : String(test.got))}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="muted">Ещё {item.hidden_count ?? 15} скрытых тестов. Их нет на экране, прогон по ним идёт только когда сдаёте весь тест.</p>
+          </>
+        )}
+      </section>
+    </div>
   );
 }
 

@@ -105,6 +105,20 @@ def test_failed_test_does_not_assign_grade_and_form_stays_comparable(client):
     assert 2.7 <= body["mean_difficulty"] <= 3.3
     for item in body["items"]:
         assert "correct" not in item
+        if item["kind"] == "code":
+            assert len(item["public_tests"]) == 5
+            assert item["hidden_count"] == 15
+            assert "hidden" not in item
+            ran = client.post(
+                f"/api/v1/assessments/sessions/{body['id']}/run",
+                headers=auth(token),
+                json={"item_id": item["id"], "source": "def solve(\n", "language": "python3.12"},
+            )
+            assert ran.status_code == 200, ran.text
+            payload = ran.json()
+            assert payload["syntax"]["line"] >= 1
+            assert payload["cases"] == []
+            assert payload["hidden_count"] == 15
     submitted = client.post(
         f"/api/v1/assessments/sessions/{body['id']}/submit",
         headers=auth(token),
