@@ -1,0 +1,361 @@
+@import 'tailwindcss';
+@import './typography.css';
+
+:root {
+  /* Единые отступы приложения (Tailwind pt-12 / pb-8) с учётом iOS safe area */
+  --app-pt: max(3rem, env(safe-area-inset-top, 0px));
+  --app-pb: max(2rem, env(safe-area-inset-bottom, 0px));
+  /* Высота вьюпорта для полноэкранных оболочек страниц (см. .page-shell).
+   * 100vh в мобильном Safari меряется по вьюпорту с УБРАННЫМ тулбаром, поэтому
+   * оболочка вылезает за экран и низ списка уезжает под тулбар (WebKit #297779).
+   * Реальная высота — 100dvh, 100vh остаётся фолбэком для движков без dvh
+   * (iOS < 15.4, старые WebView).
+   * Значение подменяется ЦЕЛИКОМ в @supports ниже. Смешивать min-height: 100vh
+   * как «фолбэк» с max-height: 100dvh в одном правиле нельзя: по алгоритму
+   * вычисления height min-height применяется последним и перебивает max-height,
+   * то есть фолбэк побеждал бы dvh и баг оставался бы невылеченным. */
+  --app-vh: 100vh;
+  /* Зона футера: блюр + недоступность кликов + отступ скролла */
+  --footer-clearance: calc(var(--app-pb) + 4.75rem);
+  /* Эталон нижней кнопки (как «Сохранить» в редактировании профиля) */
+  --bottom-actions-padding: 12px 16px var(--app-pb);
+  --bottom-btn-padding: 14px;
+  --bottom-btn-radius: 14px;
+}
+
+/* Движки с dvh получают динамическую высоту вьюпорта, остальные остаются на vh
+ * из :root. Подмена одной переменной — единственная точка, где живёт выбор
+ * единицы, поэтому рецепт нигде не расползается по min/max-height. */
+@supports (height: 100dvh) {
+  :root {
+    --app-vh: 100dvh;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: #ffffff;
+  color: #101828;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
+  touch-action: pan-y;
+}
+
+html {
+  /* Фон корня: перескролл (rubber-band) и любой зазор между вебвью и экраном
+   * показывают именно его. Без явного белого сквозь него светит фон нативного
+   * контейнера — в тёмной теме iOS он чёрный (см. backgroundColor в
+   * capacitor.config.ts, это второй слой той же страховки). */
+  background: #ffffff;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
+  touch-action: pan-y;
+}
+
+/* ─── Нативное поведение WebView (iOS WKWebView / Android WebView) ───
+ * Запрещаем выделение текста и системное меню долгого нажатия
+ * (Копировать / Найти / Перевести, Поделиться / Сохранить в фото / Copy Subject).
+ * Эти свойства наследуются, поэтому объявления на html доходят до всех
+ * потомков, включая <img>. Поля ввода возвращают себе выделение ниже.
+ */
+html {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Картинки и графика: дополнительно запрещаем перетаскивание
+ * (iOS drag-out / «поднятие объекта», контекстное меню Android WebView)
+ * на случай, если наследование где-то перебито более специфичным правилом.
+ */
+img,
+svg,
+video,
+canvas {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Исключения: везде, где пользователь набирает и правит текст (онбординг,
+ * редактирование профиля, заметки, поиск), выделение и системное меню
+ * «Вставить / Выбрать всё» обязаны работать.
+ * -webkit-user-select: text на самом поле заодно лечит баг WKWebView,
+ * когда user-select: none у родителя ломает фокус в input.
+ */
+input,
+textarea,
+[contenteditable],
+[contenteditable='true'] {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Страховка от авто-зума iOS: WebKit увеличивает масштаб всей страницы, когда
+ * фокус попадает в поле с вычисленным font-size < 16px. Основная защита —
+ * maximum-scale=1 в index.html, это второй слой на случай, если кто-то добавит
+ * новое поле с 14-15px (так уже было с заметкой о пользователе).
+ * @supports (-webkit-touch-callout: none) срабатывает только в WebKit на iOS.
+ * !important обязателен: селектор по тегу (0-0-1) проигрывает любому правилу
+ * по классу вроде .field-input (0-1-0), без него правило ничего не делает.
+ * Preflight Tailwind ставит формам font: inherit, поэтому поле без явного
+ * font-size наследует размер родителя — а он в приложении часто 14-15px.
+ * max(16px, 1em) держит нижнюю границу в 16px и сохраняет унаследованный
+ * размер, если родитель крупнее. Если полю намеренно нужен размер больше 16px,
+ * задавайте его тоже через !important. */
+@supports (-webkit-touch-callout: none) {
+  input,
+  textarea,
+  select {
+    font-size: max(16px, 1em) !important;
+  }
+}
+
+.pt-app {
+  padding-top: var(--app-pt);
+}
+
+.pb-app {
+  padding-bottom: var(--app-pb);
+}
+
+.app-inset-y {
+  padding-top: var(--app-pt);
+  padding-bottom: var(--app-pb);
+}
+
+/* ─── Общая оболочка страниц с белым list-block ───
+ *
+ * Единый рецепт высоты полноэкранной оболочки, один на все экраны:
+ *   height: var(--app-vh) + display: flex; flex-direction: column; overflow: hidden
+ *
+ * min-height / max-height не добавлять: min-height применяется последним и
+ * перебивает max-height, из-за чего пара «min-height: 100vh + max-height: 100dvh»
+ * возвращала 100vh и низ списка снова уезжал под тулбар (WebKit #297779).
+ * Процентную цепочку (height: 100% от вьюпорт-юнитов) тоже не возвращать — она
+ * провоцировала баг ОТРИСОВКИ WKWebView на iOS 26.x (Apple forums 813733):
+ * дети растягиваются флексом, а не процентами.
+ * Раньше рецепт дублировался на пяти страницах, теперь живёт только здесь.
+ */
+.page-shell,
+.friends-page,
+.search-page,
+.afisha-page,
+.events-page,
+.announcements-page {
+  margin: 0 auto;
+  position: relative;
+  z-index: 0;
+  height: var(--app-vh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Растягивается флексом родителя — без height/max-height в процентах. */
+.page-shell__content,
+.friends-page__content,
+.search-page__content,
+.afisha-page__content,
+.events-page__content,
+.announcements-page__content {
+  padding-top: var(--app-pt);
+  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 1.2vh, 10px);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.page-title {
+  font-size: 40px;
+  font-weight: 600;
+  color: #000000d9;
+  margin: 0 0 8px 0;
+  padding-left: 15px;
+  text-align: left;
+  flex-shrink: 0;
+}
+
+/**
+ * Белый контейнер: до низа экрана.
+ * Скролл внутри; зона футера блюрится и не кликабельна.
+ */
+.page-list-block,
+.friends-page__list-block,
+.search-page__list-block,
+.afisha-page__list-block,
+.events-page__list-block,
+.announcements-page__list-block {
+  box-shadow: 0 0 10px 0 #0000001a;
+  border-radius: 24px 24px 0 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 24px 15px 0;
+  background: white;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  isolation: isolate;
+}
+
+/* Блюр зоны футера — глобально в Footer (.footer-blur), не на list-block */
+
+.page-list-block__scroll,
+.friends-page__tab-content,
+.search-page__results,
+.afisha-page__scroll-area,
+.events-page__grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding-bottom: var(--footer-clearance);
+}
+
+.announcements-page__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.page-list-block__scroll::-webkit-scrollbar,
+.friends-page__tab-content::-webkit-scrollbar,
+.search-page__results::-webkit-scrollbar,
+.afisha-page__scroll-area::-webkit-scrollbar,
+.events-page__grid::-webkit-scrollbar,
+.announcements-page__list::-webkit-scrollbar {
+  display: none;
+}
+
+/* «Загрузить ещё» под списками с постраничной подгрузкой (Поиск, Нити) */
+.load-more-btn {
+  display: block;
+  width: 100%;
+  flex-shrink: 0;
+  margin: 8px 0 4px;
+  padding: 12px;
+  border: none;
+  border-radius: var(--bottom-btn-radius);
+  background: #f6f6f6;
+  color: var(--color-brand);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.load-more-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Sheet-модалки: всплытие снизу */
+@keyframes sheet-slide-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheet-slide-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.sheet-modal--enter {
+  animation: sheet-slide-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sheet-modal--exit {
+  animation: sheet-slide-out 0.24s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@keyframes page-swipe-right-enter {
+  from {
+    transform: translate3d(100%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes page-swipe-right-exit {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+.page-swipe-right--enter {
+  animation: page-swipe-right-enter 0.3s ease-out backwards;
+  overflow-x: clip;
+}
+
+.page-swipe-right--exit {
+  animation: page-swipe-right-exit 0.16s ease-in forwards;
+  pointer-events: none;
+  overflow-x: clip;
+}
+
+.page-swipe-right--dragging {
+  overflow-x: clip;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-swipe-right--enter,
+  .page-swipe-right--exit {
+    animation: none;
+  }
+}
+
+/* Контейнер нижних кнопок в модалках / скиллах / фильтрах */
+.bottom-actions-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: var(--bottom-actions-padding);
+  background: #ffffffd9;
+  box-shadow: 1px -3px 13px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  border-radius: 12px 12px 0 0;
+  border-top: none;
+  flex-shrink: 0;
+}

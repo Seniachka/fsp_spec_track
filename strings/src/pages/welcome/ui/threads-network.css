@@ -1,0 +1,14 @@
+.threads-network {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.threads-network__path {
+  fill: none;
+}
+
+.threads-network__dot {
+  opacity: 0;
+}

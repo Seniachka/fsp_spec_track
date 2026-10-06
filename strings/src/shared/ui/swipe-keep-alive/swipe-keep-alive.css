@@ -1,0 +1,112 @@
+/* Высота — тот же рецепт, что у .page-shell: единица живёт в --app-vh
+ * (global.css), где 100vh подменяется на 100dvh через @supports.
+ * Голый 100dvh здесь опасен: в stack-режиме ОБА ребёнка (__base и __overlay)
+ * абсолютные, поточного контента у контейнера не остаётся. Движок без dvh
+ * (iOS < 15.4, старые WebView) просто отбрасывает такое объявление — высота
+ * схлопывается в 0, и экран получается пустым.
+ * Отдельный min-height: 100vh рядом НЕ добавлять: фолбэк живёт в переменной. */
+.swipe-keep-alive {
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  min-height: var(--app-vh);
+  overflow: hidden;
+}
+
+.swipe-keep-alive__base {
+  width: 100%;
+  min-height: var(--app-vh);
+}
+
+/* Всегда absolute в stack-режиме — иначе при появлении оверлея база «прыгает» и свайп кажется в другую сторону */
+.swipe-keep-alive--stack .swipe-keep-alive__base {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.swipe-keep-alive__base--covered {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.swipe-keep-alive--stack .swipe-keep-alive__base--covered {
+  overflow: hidden;
+}
+
+/* fixed-тулбары базовой страницы иначе поверх оверлея */
+.swipe-keep-alive__base--covered .profile-page__toolbar,
+.swipe-keep-alive__base--covered .user-profile__toolbar,
+.swipe-keep-alive__base--covered .profile-page::after,
+.swipe-keep-alive__base--covered .user-profile::after {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Во время свайпа назад база должна быть видна целиком (в т.ч. тулбар профиля) */
+.swipe-keep-alive--revealing > .swipe-keep-alive__base--covered .profile-page__toolbar,
+.swipe-keep-alive--revealing > .swipe-keep-alive__base--covered .user-profile__toolbar,
+.swipe-keep-alive--revealing > .swipe-keep-alive__base--covered .profile-page::after,
+.swipe-keep-alive--revealing > .swipe-keep-alive__base--covered .user-profile::after {
+  visibility: visible;
+  opacity: 1;
+}
+
+.swipe-keep-alive__overlay {
+  position: relative;
+  z-index: 40;
+  width: 100%;
+  min-height: var(--app-vh);
+  background: transparent;
+}
+
+.swipe-keep-alive--stack .swipe-keep-alive__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  min-height: 0;
+  height: 100%;
+  /* hidden резал edit/settings/docs — скролл страницы идёт здесь */
+  overflow-x: clip;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.swipe-keep-alive__overlay[hidden] {
+  display: none !important;
+}
+
+.swipe-keep-alive__overlay > * {
+  box-sizing: border-box;
+  display: block;
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  min-height: 100%;
+  background: #fff;
+}
+
+/* Вложенный keep-alive заполняет оверлей; скролл — у его base/вложенного overlay.
+ *
+ * Фон обёртки ОСТАЁТСЯ прозрачным и белым его делать нельзя: свайп назад
+ * (usePageSwipeRight) двигает transform'ом саму страницу внутри, а обёртка
+ * стоит на месте — непрозрачная, она закрыла бы базу, которая должна
+ * открываться из-под уезжающей страницы.
+ *
+ * Поэтому страница, которая живёт в оверлее, обязана быть непрозрачной сама.
+ * Правило `> *` выше покрывает только те, что лежат прямо в оверлее; страницы
+ * за вложенным keep-alive (мероприятия, объявления, фильтры, настройки) задают
+ * background в своём файле — иначе сквозь них просвечивает база. */
+.swipe-keep-alive__overlay > .swipe-keep-alive {
+  background: transparent;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+}

@@ -1,0 +1,310 @@
+/* Экран входа (все три шага: email / пароль / СМС).
+ *
+ * Оболочка ровно по видимой области, без скролла: height: var(--app-vh) — общий
+ * рецепт из global.css (.page-shell).
+ *
+ * Клавиатуру этот экран обрабатывает сам: на маунте он переключает плагин в
+ * Keyboard.resize = none (см. setNativeKeyboardResize в OnboardingAuthPage),
+ * поэтому вебвью при показе клавиатуры НЕ ужимается — вьюпорт, --app-vh и вся
+ * раскладка остаются прежними, reflow нет. Вместо перескока вёрстки блок
+ * «заголовок + остров» плавно уезжает вверх трансформом (см. __stack). */
+.onboarding-auth {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: var(--app-vh);
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: var(--app-pt) 0 var(--app-pb);
+  background: transparent;
+}
+
+.onboarding-auth::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgb(255 255 255 / 0.35), rgb(255 255 255 / 0.55) 50%, rgb(255 255 255 / 0.75)),
+    url('../../../assets/profile-gradient.svg') center top / 100% auto no-repeat,
+    linear-gradient(180deg, #ece8ff 0%, #f7f5ff 45%, #ffffff 100%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.onboarding-auth__back {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: 0 0 0 calc(20px - 8px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Область под кнопкой «назад»: в ней блок с заголовком и островом стоит по
+ * центру. overflow: hidden оставлен намеренно — если на коротком экране блок
+ * выше области, он обрежется по её кромке, а не наедет на кнопку «назад».
+ * Трансформ живёт на вложенном __stack, а не здесь: сдвиг самой области сдвинул
+ * бы и её клип-бокс, и обрезка перестала бы работать. */
+.onboarding-auth__center {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Блок «заголовок + остров». Стоит по центру видимой области и при открытой
+ * клавиатуре с места НЕ трогается, пока поле ввода и кнопка «Продолжить» видны.
+ *
+ * Величину сдвига считает JS и кладёт в --auth-shift на оболочке экрана: ровно
+ * столько, чтобы низ кнопки «Продолжить» (плюс небольшой запас) поднялся над
+ * верхней кромкой клавиатуры, и не больше расстояния до кнопки «назад». Ссылка
+ * «Авторизоваться через браузер» и подсказка про VPN уходить под клавиатуру
+ * могут — держим только поле и «Продолжить».
+ *
+ * Фолбэк в var() — ноль: до первого расчёта блок стоит там, куда его поставил
+ * флекс. Считать сдвиг прямо из --keyboard-height нельзя, поэтому переменная тут
+ * и не упоминается: высоту клавиатуры плагин присылает и на Android, а там
+ * вьюпорт ужимает сама система (adjustResize) — вычлось бы дважды. Кто и когда
+ * вычитает клавиатуру, решает JS (см. manualShift в OnboardingAuthPage).
+ *
+ * Кривая близка к нативной кривой клавиатуры iOS, длительность 0.25s — блок
+ * едет вместе с клавиатурой, а не догоняет её. */
+.onboarding-auth__stack {
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  min-height: 0;
+  width: 100%;
+  transform: translateY(calc(-1 * var(--auth-shift, 0px)));
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-auth__stack {
+    transition: none;
+  }
+}
+
+.onboarding-auth__title {
+  flex: none;
+  margin: 0 0 16px;
+  padding: 0 20px;
+  font-size: clamp(28px, 7vw, 36px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+/* Остров: белая карточка во всю ширину, скруглённая со всех сторон (как было
+ * до правок с прибиванием к низу). flex: 0 1 auto + min-height: 0 — на коротком
+ * вьюпорте он ужимается (внутри ужимается только подсказка), а не растёт. */
+.onboarding-auth__chip {
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  min-height: 0;
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 20px;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgb(81 48 226 / 0.08);
+}
+
+/* Короткий вьюпорт: альбомная ориентация и маленькие экраны. Вебвью на этом
+ * экране под клавиатуру не ужимается, поэтому сюда попадают только реально
+ * низкие вьюпорты. Верх отдаёт место острову: отступ сверху ужимается до выреза
+ * (safe area), заголовок мельчает. Остров с полем и кнопкой не трогаем. */
+@media (max-height: 520px) {
+  .onboarding-auth {
+    padding-top: max(env(safe-area-inset-top, 0px), 8px);
+  }
+
+  .onboarding-auth__title {
+    margin-bottom: 10px;
+    font-size: 22px;
+  }
+}
+
+/* Компактный режим — «блок не помещается над клавиатурой».
+ *
+ * Ставится классом из JS (COMPACT_CLASS в OnboardingAuthPage), а не медиазапросом:
+ * вьюпорт на этом экране под клавиатуру не ужимается, поэтому @media (max-height)
+ * на телефоне не срабатывает никогда. Включается это последним средством — только
+ * когда кнопка «Продолжить» не помещается над клавиатурой даже после
+ * максимального сдвига (блок уже упёрся в кнопку «назад»). Без этого поле ввода
+ * с кнопкой обрезались бы верхней кромкой.
+ *
+ * Порядок жертв: сначала воздух (отступы и промежутки), потом размер заголовка,
+ * потом необязательный текст — подсказка про VPN прячется, длинная подсказка СМС
+ * ужимается и скроллится внутри себя. Поле ввода и «Продолжить» не трогаем. */
+.onboarding-auth--compact .onboarding-auth__title {
+  margin-bottom: 10px;
+  font-size: 22px;
+}
+
+.onboarding-auth--compact .onboarding-auth__chip {
+  gap: 10px;
+  padding: 16px;
+}
+
+.onboarding-auth--compact .onboarding-auth__cta {
+  padding: 13px 16px;
+}
+
+.onboarding-auth--compact .onboarding-auth__dev-cta {
+  padding: 11px 16px;
+}
+
+.onboarding-auth--compact .onboarding-auth__vpn-hint {
+  display: none;
+}
+
+/* Фиксированный максимум, а не flex-сжатие: высоту блока JS меряет до того, как
+ * применит сдвиг, и «резиновая» высота сделала бы замер неверным. */
+.onboarding-auth--compact .onboarding-auth__chip > .onboarding-auth__hint {
+  max-height: 4.5em;
+}
+
+/* Внутри острова не ужимается ничего, кроме подсказки: поле ввода и кнопки
+ * должны быть видны целиком на любом вьюпорте. */
+.onboarding-auth__chip > * {
+  flex: none;
+}
+
+/* Единственная уступка на коротком вьюпорте: текстовая подсказка ужимается и
+ * скроллится сама, вместо того чтобы вытолкнуть кнопку за нижнюю кромку. */
+.onboarding-auth__chip > .onboarding-auth__hint {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.onboarding-auth__hint {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.onboarding-auth__input {
+  border-color: color-mix(in srgb, var(--color-brand) 40%, var(--color-border));
+}
+
+/* Обёртка кнопки «Продолжить» — только чтобы JS мог измерить её низ (Button ref
+ * наружу не пробрасывает). Флекс-контейнер, а не простой блок: иначе margin-top
+ * кнопки схлопнулся бы наружу и не вошёл в offsetHeight обёртки. */
+.onboarding-auth__cta-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.onboarding-auth__cta {
+  margin-top: 2px;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.onboarding-auth__cta--expired {
+  opacity: 0.55;
+}
+
+.onboarding-auth__dev-cta {
+  margin: 0;
+  border: 0;
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: var(--color-surface-muted, #f2f4f7);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-brand);
+  cursor: pointer;
+}
+
+.onboarding-auth__dev-hint {
+  margin: -4px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+  color: #667085;
+}
+
+.onboarding-auth__restore {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 24px 20px calc(24px + var(--app-pb, 0px));
+  background: rgb(0 0 0 / 0.45);
+}
+
+.onboarding-auth__restore > .onboarding-auth__hint,
+.onboarding-auth__restore > .onboarding-auth__cta,
+.onboarding-auth__restore > .onboarding-auth__dev-cta {
+  max-width: 480px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.onboarding-auth__restore > .onboarding-auth__hint {
+  padding: 20px;
+  border-radius: 20px;
+  background: #fff;
+  color: var(--color-text);
+  font-size: 16px;
+}
+
+
+/* Подсказка под «Авторизоваться через браузер»: с VPN страница ЦУ не открывается. */
+.onboarding-auth__vpn-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: -4px 0 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-brand) 7%, #fff);
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.onboarding-auth__vpn-hint-icon {
+  flex-shrink: 0;
+  color: var(--color-brand);
+}
+
+.onboarding-auth__dev-cta:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.onboarding-auth__hint strong {
+  color: var(--color-text);
+  font-weight: 600;
+}

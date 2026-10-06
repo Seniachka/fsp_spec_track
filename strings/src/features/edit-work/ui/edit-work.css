@@ -1,0 +1,28 @@
+.work-edit__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.work-edit__hint {
+  margin: 0;
+  font-size: 13px;
+  color: #00000080;
+}
+
+.work-edit__delete {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: none;
+  margin: 24px 0 16px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-danger);
+  text-align: center;
+}
+
+.work-edit__actions {
+  margin-top: 8px;
+}

@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: razryad
+      POSTGRES_PASSWORD: razryad
+      POSTGRES_DB: razryad
+    ports:
+      - "5432:5432"
+    volumes:
+      - razryad-db:/var/lib/postgresql/data
+
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://razryad:razryad@db:5432/razryad
+      JWT_SECRET: dev-only-change-me
+      SEED: "1"
+      AUTO_VERIFY: "1"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  web:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  razryad-db:

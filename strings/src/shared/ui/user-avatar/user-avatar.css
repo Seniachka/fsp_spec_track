@@ -1,0 +1,86 @@
+.user-avatar {
+  /* доля стороны аватара под рамку иконки-заглушки (сам глиф внутри рамки — ~75% её стороны) */
+  --avatar-icon-ratio: 50%;
+  /* толщина контура в CSS-пикселях: не зависит от размера аватара, см. non-scaling-stroke ниже */
+  --avatar-icon-stroke: 1.75px;
+  display: block;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+/* Фото пользователя: никакого системного меню долгого нажатия
+ * (Поделиться / Сохранить в фото / Копировать / Копировать объект)
+ * и никакого перетаскивания. Дублирует глобальные правила из global.css
+ * намеренно — на случай более специфичных сбросов сверху.
+ */
+.user-avatar--photo {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Заглушка без фото: фиолетовый градиент из макета + белая контурная иконка человека */
+.user-avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #7c6fc1 0%, #5130e2 100%);
+  user-select: none;
+  overflow: hidden;
+}
+
+/* Размер иконки — процент от стороны заглушки, а не font-size/1em: контейнер всегда
+ * с определёнными width/height, проценты работают везде, включая WKWebView iOS 15
+ * (там нет container queries, а деплой-таргет приложения — 15.0).
+ * viewBox + preserveAspectRatio по умолчанию держат глиф квадратным и по центру. */
+.user-avatar__icon {
+  display: block;
+  flex-shrink: 0;
+  width: var(--avatar-icon-ratio);
+  height: var(--avatar-icon-ratio);
+  color: #fff;
+  stroke-width: var(--avatar-icon-stroke);
+}
+
+/* Без non-scaling-stroke толщина задаётся в единицах viewBox и растёт вместе с аватаром:
+ * 1.2px на карточке объявления и 6.6px на большом аватаре профиля. С ним stroke-width
+ * читается в CSS-пикселях и одинаков на всех размерах.
+ * vector-effect не наследуется от <svg> к фигурам, поэтому назначаем его им напрямую. */
+.user-avatar__icon * {
+  vector-effect: non-scaling-stroke;
+}
+
+.user-avatar--xxs {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+.user-avatar--xs {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.user-avatar--sm {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+
+.user-avatar--md {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+}
+
+/* Большой аватар (профиль, QR, онбординг, редактирование): по макету человечек
+ * занимает заметно меньшую долю квадрата, чем на мелких аватарках. */
+.user-avatar--fill {
+  --avatar-icon-ratio: 30%;
+  --avatar-icon-stroke: 2px;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}

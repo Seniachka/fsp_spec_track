@@ -1,0 +1,49 @@
+/* Экран последней надежды. Переменные из global.css продублированы фолбэками:
+ * если рендер упал раньше, чем стили темы применились, кнопка всё равно должна
+ * остаться читаемой и нажимаемой. */
+
+.error-boundary {
+  box-sizing: border-box;
+  min-height: var(--app-vh, 100vh);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--app-pt, 3rem) 15px var(--app-pb, 2rem);
+  background: #ffffff;
+  color: var(--color-text, #101828);
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  text-align: center;
+}
+
+.error-boundary__box {
+  width: 100%;
+  max-width: 320px;
+}
+
+.error-boundary__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.error-boundary__text {
+  margin: 8px 0 24px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-text-muted, #667085);
+}
+
+.error-boundary__btn {
+  width: 100%;
+  border: 0;
+  border-radius: var(--bottom-btn-radius, 14px);
+  padding: var(--bottom-btn-padding, 14px);
+  background: var(--color-brand, #7057f8);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}

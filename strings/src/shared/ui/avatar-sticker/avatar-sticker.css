@@ -1,0 +1,56 @@
+.avatar-sticker {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  pointer-events: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+/* По умолчанию / списки: правый нижний */
+.avatar-sticker--br {
+  right: -4px;
+  bottom: -4px;
+  transform: rotate(8.28deg);
+}
+
+/* Результат QR: левый верхний, против наклона аватарки (3deg) */
+.avatar-sticker--tl {
+  left: -4px;
+  top: -10px;
+  transform: rotate(3deg);
+}
+
+.avatar-sticker svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+/* Стикер скана на QR-бейдже — 40×40, иконка как в футере */
+.avatar-sticker--tl.avatar-sticker--scan {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+
+.avatar-sticker--tl.avatar-sticker--scan svg {
+  width: 24px;
+  height: 24px;
+}
+
+.avatar-sticker--favorite {
+  background: #ec66bbb2;
+}
+
+.avatar-sticker--note {
+  background: #775affb2;
+}
+
+.avatar-sticker--scan {
+  background: #24b568bf;
+}

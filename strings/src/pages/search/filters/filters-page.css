@@ -1,0 +1,182 @@
+/* Тот же рецепт, что у .page-shell: height: var(--app-vh).
+ * min-height: 100vh здесь мерил большой вьюпорт (тулбар убран), а база
+ * swipe-keep-alive (.swipe-keep-alive--stack .swipe-keep-alive__base —
+ * position: absolute; inset: 0; overflow: auto) высотой в 100dvh, поэтому
+ * страница была выше своего скроллера: лишний скролл на высоту тулбара и
+ * fixed-панель .filters-page__actions поверх последней секции. */
+.filters-page {
+  height: var(--app-vh);
+  background: white;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  padding-bottom: calc(var(--app-pb) + 4.5rem);
+}
+
+.filters-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--app-pt) 16px 20px;
+  position: relative;
+  background: white;
+}
+
+.filters-page__back {
+  position: absolute;
+  left: 16px;
+  top: var(--app-pt);
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  color: #000;
+}
+
+.filters-page__back svg {
+  color: #000;
+}
+
+.filters-page__title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #000000D9;
+  margin: 0;
+}
+
+.filters-page__reset-link {
+  position: absolute;
+  right: 16px;
+  top: var(--app-pt);
+  border: 0;
+  background: transparent;
+  color: #7057F8;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.filters-page__body {
+  flex: 1;
+  padding: 0 16px 20px;
+  background: white;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.filters-page__section {
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.filters-page__section:focus-within,
+.filters-page__section:has(.select-dropdown--open) {
+  z-index: 120;
+}
+
+.filters-page__section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.filters-page__section-label {
+  font-size: 17px;
+  font-weight: 600;
+  color: #000000D9;
+}
+
+.filters-page__selected-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 0px;
+}
+
+.filters-page__add-btn {
+  background: none;
+  border: none;
+  color: #7057F8;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.filters-page__skill-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #e5e7eb;
+  color: #000000;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 16px;
+  gap: 6px;
+}
+
+.filters-page__skill-remove {
+  background: none;
+  border: none;
+  color: #00000080;
+  font-size: 26px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.filters-page__skill-remove:hover {
+  opacity: 1;
+}
+
+/* Кнопки снизу — эталон как «Сохранить» в профиле */
+.filters-page__actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: var(--bottom-actions-padding);
+  background: #fff;
+  display: flex;
+  gap: 12px;
+  z-index: 10;
+}
+
+.filters-page__apply-btn {
+  flex: 1 1 auto;
+  padding: var(--bottom-btn-padding);
+  border: none;
+  border-radius: var(--bottom-btn-radius);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.filters-page__apply-btn {
+  background: #775AFF;
+  color: white;
+}
+
+.filters-page__apply-btn:hover {
+  opacity: 0.8;
+}
+
+.filters-page__apply-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.filters-page__hint {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 4px 0 0 0;
+  padding-left: 4px;
+}

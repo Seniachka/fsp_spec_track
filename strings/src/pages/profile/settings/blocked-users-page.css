@@ -1,0 +1,59 @@
+.blocked-users__status {
+  margin: 24px 0 0;
+  text-align: center;
+  color: var(--color-text-muted, #667085);
+  font-size: 15px;
+}
+
+.blocked-users__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.blocked-users__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid #eaecf0;
+}
+
+.blocked-users__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.blocked-users__name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text, #101828);
+}
+
+.blocked-users__meta {
+  font-size: 13px;
+  color: var(--color-text-muted, #667085);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.blocked-users__unblock {
+  flex-shrink: 0;
+  border: 0;
+  background: none;
+  padding: 8px 4px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-brand, #7057f8);
+}
+
+.blocked-users__unblock:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

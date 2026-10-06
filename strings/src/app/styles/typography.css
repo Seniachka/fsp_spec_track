@@ -1,0 +1,59 @@
+@theme {
+  --color-brand: #7057f8;
+  --color-danger: #E9033A;
+  --color-text: #101828;
+  --color-text-muted: #667085;
+  --color-border: #e4e7ec;
+  --color-surface-muted: #f2f4f7;
+}
+
+.text-title-lg {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text);
+}
+
+.text-title-md {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text);
+}
+
+.text-body {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.text-body-sm {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.text-section {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-brand);
+}
+
+.text-chip {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.text-btn {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.text-link-danger {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-danger);
+}

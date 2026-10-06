@@ -1,0 +1,107 @@
+.bottom-sheet {
+  width: 100%;
+  max-width: none;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  /* Через var(--app-vh) (global.css): голое 100dvh внутри calc() делает всю
+   * min()-функцию невычислимой на движке без dvh, объявление отбрасывается
+   * целиком, max-height становится none — и шторка вырастает выше экрана. */
+  max-height: min(calc(var(--app-vh) * 0.92), calc(var(--app-vh) - var(--app-pt, 0px)));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+  transform: translateY(0);
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bottom-sheet__header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 16px 8px;
+  position: relative;
+  min-height: 56px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.bottom-sheet__header:active {
+  cursor: grabbing;
+}
+
+.bottom-sheet__drag-handle {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 35px;
+  height: 5px;
+  border-radius: 3px;
+  background: #3c3c434d;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.bottom-sheet__heading {
+  max-width: calc(100% - 96px);
+  text-align: center;
+  padding: 8px 0 0;
+}
+
+.bottom-sheet__heading-spacer {
+  flex: 1;
+  min-height: 24px;
+}
+
+.bottom-sheet__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #000000d9;
+}
+
+.bottom-sheet__subtitle {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 400;
+  color: #00000080;
+}
+
+.bottom-sheet__close,
+.bottom-sheet__back {
+  position: absolute;
+  top: calc(50% + 4px);
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #54506d0d;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 22px;
+  color: #000000d9;
+  z-index: 10;
+}
+
+.bottom-sheet__close {
+  right: 16px;
+}
+
+.bottom-sheet__back {
+  left: 16px;
+}
+
+.bottom-sheet__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 16px calc(24px + var(--app-pb, 0px));
+  -webkit-overflow-scrolling: touch;
+}

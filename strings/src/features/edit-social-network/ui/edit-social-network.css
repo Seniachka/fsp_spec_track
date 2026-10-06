@@ -1,0 +1,91 @@
+.social-edit__label {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--color-brand);
+}
+
+.social-edit__hint {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-bottom: 12px;
+}
+
+.social-edit__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.social-edit__delete {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: none;
+  margin: 24px 0 16px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-danger);
+  text-align: center;
+}
+
+.social-edit__actions {
+  margin-top: 8px;
+}
+
+.add-social__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.add-social__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  background: var(--color-surface-muted);
+  border-radius: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: left;
+  color: var(--color-text);
+}
+
+.add-social__icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.new-social__label {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--color-text);
+}
+
+/* Inline-ошибка под полем ввода (вместо тоста сверху) */
+.new-social__error {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--color-danger);
+}
+
+.new-social__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.new-social__actions {
+  margin-top: 24px;
+}

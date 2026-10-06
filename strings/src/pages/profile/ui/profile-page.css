@@ -1,0 +1,535 @@
+.profile-page {
+  margin: 0 auto;
+  position: relative;
+  z-index: 0;
+  background: #fff;
+  overflow-x: clip;
+  --profile-toolbar-h: 3.5rem;
+  --profile-toolbar-gap: 8px;
+}
+
+.profile-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(to bottom, rgb(255 255 255 / 0.45), rgb(255 255 255 / 0.7) 55%, #fff 85%),
+    url('../../../assets/profile-gradient.svg') center top / 100% auto no-repeat;
+  z-index: -1;
+  pointer-events: none;
+  animation: profile-gradient-drift 14s ease-in-out infinite alternate;
+}
+
+/* Блюр под status bar (время / зарядка), без цветного фона */
+.profile-page::after,
+.user-profile::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--app-pt);
+  z-index: 30;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.profile-page__toolbar,
+.user-profile__toolbar {
+  position: fixed;
+  top: var(--app-pt);
+  left: 0;
+  right: 0;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--profile-toolbar-h);
+  box-sizing: border-box;
+  padding: 8px 16px 4px;
+  pointer-events: none;
+}
+
+.profile-page__toolbar .profile-buttons,
+.user-profile__toolbar .user-profile__back-wrap,
+.user-profile__toolbar .user-profile__actions {
+  pointer-events: auto;
+}
+
+.profile-page__toolbar .profile-buttons {
+  margin-left: auto;
+}
+
+.profile-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 40px;
+  background-color: #ffffff66;
+  backdrop-filter: blur(8px);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.profile-buttons:hover {
+  background-color: #ffffff99;
+}
+
+.profile-buttons button {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.profile-buttons button:active {
+  transform: scale(0.92);
+  opacity: 0.75;
+}
+
+.profile-page__content,
+.user-profile__content {
+  padding-top: calc(var(--app-pt) + var(--profile-toolbar-h) + var(--profile-toolbar-gap));
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Место под плавающий таб-бар */
+.profile-page__content {
+  padding-bottom: var(--footer-clearance);
+}
+
+/* На чужом профиле футера нет — хватает системного отступа снизу */
+.user-profile__content {
+  padding-bottom: calc(var(--app-pb) + 16px);
+}
+
+.profile-page__avatar-wrap {
+  position: relative;
+  width: fit-content;
+  margin: 0 auto 16px;
+}
+
+.profile-page__avatar {
+  width: 22vh;
+  height: 22vh;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #7C6FC1 0%, #5130E2 100%);
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgb(81 48 226 / 0.18);
+  transform: rotate(3deg);
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s ease;
+}
+
+/* Только для мыши: на iOS :hover «залипает» после тапа и аватар остаётся увеличенным */
+@media (hover: hover) {
+  .profile-page__avatar:hover {
+    transform: scale(1.03) rotate(2deg);
+    box-shadow: 0 16px 40px rgb(81 48 226 / 0.24);
+  }
+}
+
+.profile-page__avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 16px;
+  padding: 1px;
+}
+
+.profile-page__avatar-btn {
+  position: absolute;
+  right: -14px;
+  bottom: -14px;
+  rotate: -3.3deg;
+  z-index: 1;
+  animation: profile-badge-float 3.6s ease-in-out infinite;
+  transition: transform 0.25s ease;
+  font-size: 14px;
+  padding: 4px 10px 4px 6px;
+}
+
+.profile-page__avatar-btn:active {
+  transform: scale(0.96);
+}
+
+.profile-page__name {
+  margin: 4px 0 0;
+  text-align: center;
+  font-size: clamp(24px, 4vh, 30px);
+  line-height: 1.15;
+  color: #000000D9;
+}
+
+.profile-page__position {
+  text-align: center;
+  margin: 4px 0 0;
+  font-size: 16px;
+  color: #00000080;
+}
+
+.profile-page__contacts {
+  padding-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  justify-content: center;
+  color: #344054;
+}
+
+.profile-page__contacts-btn {
+  background: #54506D0D;
+  padding: 6px;
+  border-radius: 12px;
+  color: #000000d9;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 0;
+  text-decoration: none;
+  cursor: pointer;
+  font: inherit;
+  animation: profile-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.profile-page__contacts-btn:hover {
+  transform: translateY(-2px);
+  background: #54506d18;
+}
+
+.profile-page__contacts-btn:active {
+  transform: scale(0.96);
+}
+
+.profile-page__contacts-btn--primal {
+  background: #7057f826;
+  color: #7057f8;
+}
+
+.profile-page__contacts-btn--primal:hover {
+  background: #7057f836;
+}
+
+.profile-page__contacts-btn-icon {
+  display: inline-flex;
+  line-height: 0;
+}
+
+.profile-page_information-block {
+  border-radius: 16px 16px 0 0;
+  margin-top: 12px;
+  /* Снизу только небольшой воздух: место под футер даёт padding-bottom
+     самого .profile-page__content (var(--footer-clearance)) */
+  padding: 0 15px 16px;
+  background: #fff;
+}
+
+/* Табы: Учёба и Карьера */
+.profile-page__tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.profile-page__tab {
+  background: none;
+  border: none;
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 0;
+  color: #8e8e93;
+  transition: color 0.3s ease;
+}
+
+.profile-page__tab--active {
+  color: #8b5cf6;
+}
+
+.profile-page__tab-line {
+  flex: 1;
+  height: 1px;
+  background: #e5e5ea;
+  margin: 0 16px;
+}
+
+/* Контент табов */
+.profile-page__tab-content {
+  margin-bottom: 32px;
+  animation: profile-panel-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.profile-page__skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.profile-page__skill-enter {
+  display: inline-flex;
+  animation: profile-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.profile-page__list-item {
+  animation: profile-fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.profile-page__list-item:active {
+  transform: scale(0.985);
+}
+
+/* Кнопка "Ещё" */
+.profile-page__expand-btn {
+  background: none;
+  border: none;
+  color: #8b5cf6;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 12px 0;
+  margin-top: 8px;
+  transition: opacity 0.3s ease, transform 0.2s ease;
+}
+
+.profile-page__expand-btn:hover {
+  opacity: 0.7;
+}
+
+.profile-page__expand-btn:active {
+  transform: translateY(1px);
+}
+
+/* Табы для навыков */
+.profile-page__skills-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 32px 0 24px 0;
+  width: 100%;
+}
+
+.profile-page__skills-tab {
+  background: none;
+  border: none;
+  font-size: 30px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 0;
+  color: #8e8e93;
+  transition: color 0.3s ease, transform 0.2s ease;
+}
+
+.profile-page__skills-tab:active {
+  transform: scale(0.97);
+}
+
+.profile-page__skills-tab--active {
+  color: #7057F8;
+}
+
+.profile-page__skills-tab-line {
+  flex: 1;
+  height: 1px;
+  background: #e5e5ea;
+  margin: 0 16px;
+}
+
+/* Контент табов навыков */
+.profile-page__skills-tab-content {
+  animation: profile-panel-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  margin-bottom: 0;
+}
+
+.profile-page__section-title--about {
+  margin-top: 12px;
+  font-size: 32px;
+  font-weight: 500;
+  color: #7057f8;
+  text-align: left;
+}
+
+.profile-page__about p {
+  color: #344054;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 20px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Тег дня рождения */
+.profile-page__birthday-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background-color: #f3f4f6;
+  border-radius: 20px;
+  font-size: 14px;
+  animation: profile-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.profile-page__birthday-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.profile-page__birthday-date {
+  color: #8b5cf6;
+  font-weight: 500;
+}
+
+/* Entrance cascade */
+.profile-page__enter {
+  animation: profile-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.profile-page__enter--1 { animation-delay: 40ms; }
+.profile-page__enter--2 { animation-delay: 90ms; }
+.profile-page__enter--3 { animation-delay: 160ms; }
+.profile-page__enter--4 { animation-delay: 220ms; }
+.profile-page__enter--5 { animation-delay: 280ms; }
+
+.profile-page__enter--2 .profile-page__avatar {
+  animation: profile-avatar-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.profile-page__enter--2 .profile-page__avatar-btn {
+  animation:
+    profile-badge-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.28s both,
+    profile-badge-float 3.6s ease-in-out 0.9s infinite;
+}
+
+@keyframes profile-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes profile-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes profile-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes profile-avatar-in {
+  from {
+    opacity: 0;
+    transform: scale(0.88) rotate(-2deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(3deg);
+  }
+}
+
+@keyframes profile-badge-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes profile-badge-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -3px;
+  }
+}
+
+@keyframes profile-gradient-drift {
+  from {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.04) translate3d(0, -10px, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-page::before,
+  .profile-page__enter,
+  .profile-page__enter--2 .profile-page__avatar,
+  .profile-page__enter--2 .profile-page__avatar-btn,
+  .profile-page__contacts-btn,
+  .profile-page__tab-content,
+  .profile-page__skills-tab-content,
+  .profile-page__list-item,
+  .profile-page__skill-enter,
+  .profile-page__birthday-tag,
+  .profile-page__avatar-btn {
+    animation: none !important;
+  }
+
+  .profile-page__avatar,
+  .profile-page__contacts-btn,
+  .profile-buttons,
+  .profile-buttons button,
+  .profile-page__skills-tab,
+  .profile-page__expand-btn,
+  .profile-page__list-item {
+    transition: none !important;
+  }
+}
+
+.profile-page__status,
+.profile-page__empty {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.profile-page__status {
+  background: rgb(139 92 246 / 0.12);
+  color: #6d28d9;
+}
+
+.profile-page__empty {
+  background: rgb(0 0 0 / 0.04);
+  color: rgb(0 0 0 / 0.5);
+}
+
+.profile-page__empty--inline {
+  margin-top: 4px;
+  text-align: center;
+  background: none;
+  padding: 0;
+}

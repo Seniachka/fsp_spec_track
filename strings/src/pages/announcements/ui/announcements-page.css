@@ -1,0 +1,469 @@
+/**
+ * Высота оболочки — общий рецепт в global.css (.page-shell + var(--app-vh)):
+ * height: var(--app-vh) + flex-колонка, обычный поток (НЕ position:fixed).
+ * Тот же приём, что на .events-page: баг ОТРИСОВКИ WebKit на iOS 26.x
+ * (Apple forums 813733, WebKit #297779) оставляет полноэкранный слой
+ * недокрашенным, а процентная цепочка от вьюпорт-юнитов его провоцирует.
+ * Поэтому вьюпорт-юнит + flex вместо height/max-height в процентах.
+ * min/max-height не возвращать и высоту локально не переопределять.
+ */
+
+/* Непрозрачная подложка — тот же случай, что и у .events-page: под оверлеем
+ * swipe-keep-alive живёт смонтированная «Афиша», и её заголовок просвечивал
+ * сквозь полупрозрачный ::before. Фон именно на корне страницы, потому что
+ * свайп назад двигает transform'ом её саму. */
+.announcements-page {
+  background: #fff;
+}
+
+.announcements-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.65)),
+    url('../../../assets/gradient_bg_white.png');
+  background-size: cover, cover;
+  background-position: center -200px;
+  background-repeat: no-repeat;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* .announcements-page__content — тот же общий рецепт в global.css:
+ * растягивается флексом родителя, без height: 100% (процентная цепочка
+ * от вьюпорт-юнитов и была источником бага в WKWebView). */
+
+.announcements-page__header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-left: 15px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.announcements-page__back {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+  color: #000;
+  display: flex;
+  margin-bottom: 4px;
+}
+
+.announcements-page__title {
+  font-size: 40px;
+  font-weight: 600;
+  color: #000000d9;
+  margin: 0;
+  text-align: left;
+}
+
+/* list-block — global */
+
+.announcements-page__tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.announcements-page__tab {
+  flex-shrink: 0;
+  padding: 10px 20px;
+  border-radius: 20px;
+  background: #54506d0d;
+  font-size: 16px;
+  font-weight: 500;
+  color: #000000d9;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.announcements-page__tab--active {
+  background: #7057f826;
+  color: #7057f8;
+}
+
+/* Страховка отрисовки iOS 26: у простыни свой композитный слой
+   (см. комментарий к .announcements-page). Модалки рендерятся снаружи. */
+.announcements-page__list-block {
+  transform: translateZ(0);
+}
+
+.announcements-page__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-x: hidden;
+  /* место под бар «Создать» + вылет стикера отсчёта (right: -12px + тень) */
+  padding-top: 16px;
+  padding-right: 16px;
+  padding-bottom: calc(var(--app-pb) + 4.5rem);
+}
+
+.announcements-page__list::-webkit-scrollbar {
+  display: none;
+}
+
+.announcements-page__create-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 7;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--bottom-actions-padding);
+  background: #ffffffd9;
+  box-shadow: 1px -3px 13px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  border-radius: 12px 12px 0 0;
+}
+
+.announcements-page__create-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: var(--bottom-btn-padding);
+  border: none;
+  border-radius: var(--bottom-btn-radius);
+  background: #775aff;
+  font-size: 16px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.announcements-page__create-btn:hover {
+  background: #6240e0;
+}
+
+.announcements-page__card {
+  --ann-card-pad: 16px;
+  --ann-card-title-h: 16px;
+  --ann-card-title-mb: 10px;
+  --ann-card-desc-h: 34px; /* две полоски скелетона: 14 + 6 + 14 */
+  --ann-card-desc-mb: 14px;
+  --ann-card-author-h: 32px;
+  --ann-card-h: calc(
+    var(--ann-card-pad) * 2 + var(--ann-card-title-h) + var(--ann-card-title-mb) +
+      var(--ann-card-desc-h) + var(--ann-card-desc-mb) + var(--ann-card-author-h)
+  );
+
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  background: #f6f6f6;
+  border-radius: 16px;
+  padding: var(--ann-card-pad);
+  height: var(--ann-card-h);
+  transition: transform 0.2s;
+  position: relative;
+  overflow: visible;
+}
+
+.announcements-page__card:hover {
+  transform: translateY(-2px);
+}
+
+.announcements-page__card-title {
+  flex: 0 0 var(--ann-card-title-h);
+  box-sizing: border-box;
+  height: var(--ann-card-title-h);
+  max-height: var(--ann-card-title-h);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: var(--ann-card-title-h);
+  color: #000000d9;
+  margin: 0 0 var(--ann-card-title-mb);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  line-clamp: 1;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.announcements-page__card-description {
+  flex: 0 0 var(--ann-card-desc-h);
+  box-sizing: border-box;
+  height: var(--ann-card-desc-h);
+  max-height: var(--ann-card-desc-h);
+  font-size: 14px;
+  line-height: 17px;
+  color: #000000d9;
+  margin: 0 0 var(--ann-card-desc-mb);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.announcements-page__card-author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 var(--ann-card-author-h);
+  height: var(--ann-card-author-h);
+  margin-top: auto;
+}
+
+.announcements-page__card-author img,
+.announcements-page__card-author .user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.announcements-page__card-author span {
+  font-size: 14px;
+  font-weight: 500;
+  color: #000000d9;
+}
+
+.announcements-page__group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+  overflow: visible;
+}
+
+.announcements-page__group-title {
+  color: #7057f8;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.announcements-page__card--own {
+  height: auto;
+  min-height: var(--ann-card-h);
+  background: #fff;
+  border: 1px solid #e5e7eb;
+}
+
+.announcements-page__card-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.announcements-page__card-actions .announcements-page__card-author {
+  flex: 1;
+}
+
+/* Стикер срока и стопка откликнувшихся переехали в
+ * widgets/announcement-card/announcement-card.css — их переиспользует
+ * раздел объявлений в профиле. */
+
+.announcements-page__card-own-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.announcements-page__card:has(.announcements-page__card-own-actions) {
+  height: auto;
+  min-height: var(--ann-card-h);
+}
+
+.announcements-page__card-btn {
+  cursor: pointer;
+  text-align: center;
+  border: none;
+  border-radius: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.announcements-page__card-btn--secondary {
+  color: #7057f8;
+  background: #54506d0d;
+}
+
+.announcements-page__card-btn--secondary:hover {
+  background: #54506d1a;
+}
+
+.announcements-page__card-btn--danger {
+  color: #fff;
+  background: #e9033a;
+}
+
+.announcements-page__card-btn--danger:hover {
+  background: #c70232;
+}
+
+.announcements-page__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 48px 20px 32px;
+  gap: 10px;
+}
+
+.announcements-page__empty-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #000000d9;
+}
+
+.announcements-page__empty-text {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.45;
+  color: #00000080;
+  max-width: 320px;
+}
+
+.announcements-page__empty-btn {
+  margin-top: 12px;
+  border: none;
+  border-radius: var(--bottom-btn-radius);
+  padding: var(--bottom-btn-padding) 20px;
+  background: #775aff;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.announcements-page__empty-btn:hover {
+  background: #6240e0;
+}
+
+.announcements-page__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.announcements-page__card--skeleton {
+  cursor: default;
+  pointer-events: none;
+  height: var(--ann-card-h);
+}
+
+.announcements-page__card--skeleton:hover {
+  transform: none;
+}
+
+.announcements-page__skeleton-block {
+  position: relative;
+  overflow: hidden;
+  background: #e8e8ee;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.announcements-page__skeleton-block::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 45%,
+    rgba(255, 255, 255, 0.7) 50%,
+    rgba(255, 255, 255, 0.55) 55%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: announcements-skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.announcements-page__skeleton-block--title {
+  height: var(--ann-card-title-h);
+  width: 68%;
+  margin-bottom: var(--ann-card-title-mb);
+}
+
+.announcements-page__skeleton-block--desc {
+  height: 14px;
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.announcements-page__skeleton-block--desc-short {
+  height: 14px;
+  width: 58%;
+  margin-bottom: var(--ann-card-desc-mb);
+}
+
+.announcements-page__skeleton-block--avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.announcements-page__skeleton-block--name {
+  height: 14px;
+  width: 110px;
+}
+
+.announcements-page__card--skeleton:nth-child(2) .announcements-page__skeleton-block--title {
+  width: 54%;
+}
+
+.announcements-page__card--skeleton:nth-child(2) .announcements-page__skeleton-block--desc-short {
+  width: 72%;
+}
+
+.announcements-page__card--skeleton:nth-child(3) .announcements-page__skeleton-block--title {
+  width: 76%;
+}
+
+.announcements-page__card--skeleton:nth-child(3) .announcements-page__skeleton-block--desc-short {
+  width: 44%;
+}
+
+.announcements-page__card--skeleton:nth-child(2) .announcements-page__skeleton-block::after {
+  animation-delay: 0.15s;
+}
+
+.announcements-page__card--skeleton:nth-child(3) .announcements-page__skeleton-block::after {
+  animation-delay: 0.3s;
+}
+
+@keyframes announcements-skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .announcements-page__skeleton-block::after {
+    animation: none;
+  }
+}

@@ -1,0 +1,15 @@
+.tag {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #d3def4;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: #344054;
+  background: #ffffff;
+  line-height: 1.2;
+}
+
+.tag--button {
+  cursor: pointer;
+}

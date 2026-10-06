@@ -1,0 +1,45 @@
+import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useAuth } from "./auth";
+
+export function Shell() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const links = user?.role === "employer"
+    ? [["/e", "Потребности"], ["/e/search", "Банк"], ["/e/invitations", "Приглашения"], ["/e/company", "Компания"]]
+    : [["/c", "Категория"], ["/c/test", "Тест"], ["/c/invitations", "Приглашения"], ["/c/vacancies", "Вакансии"], ["/c/profile", "Профиль"], ["/c/settings", "Настройки"]];
+  return (
+    <>
+      <header className="topbar">
+        <NavLink to="/" className="brand">РАЗ<span>РЯД</span></NavLink>
+        {user && (
+          <nav className="nav">
+            {links.map(([to, label]) => (
+              <NavLink key={to} to={to} end={to === "/c" || to === "/e"}>{label}</NavLink>
+            ))}
+          </nav>
+        )}
+        <div className="spacer">
+          {user && <span className="who">{user.name}</span>}
+          {user && <button className="btn-ghost" onClick={() => { logout(); navigate("/login"); }}>Выйти</button>}
+        </div>
+      </header>
+      <main className="page"><Outlet /></main>
+    </>
+  );
+}
+
+export function Guard({ role }: { role: "candidate" | "employer" }) {
+  const { user, ready } = useAuth();
+  if (!ready) return <p>Загрузка…</p>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== role) return <Navigate to={user.role === "employer" ? "/e" : "/c"} replace />;
+  return <Outlet />;
+}
+
+export function HomeRedirect() {
+  const { user, ready } = useAuth();
+  if (!ready) return null;
+  if (user?.role === "employer") return <Navigate to="/e" replace />;
+  if (user?.role === "candidate") return <Navigate to="/c" replace />;
+  return null;
+}

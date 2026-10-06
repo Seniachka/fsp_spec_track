@@ -1,0 +1,483 @@
+.announcement-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.25s ease;
+}
+
+.announcement-modal {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  /* Единица вьюпорта — только через var(--app-vh) (global.css): голое 100dvh на
+   * движке без dvh делает всю min()-функцию невычислимой, объявление
+   * отбрасывается целиком и max-height становится none. Шторка — flex-ребёнок
+   * fixed-оверлея с align-items: flex-end, поэтому без ограничения она
+   * вырастает выше экрана и верх содержимого уезжает за границу. */
+  max-height: min(calc(var(--app-vh) * 0.78), calc(var(--app-vh) - var(--app-pt) - 24px));
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+}
+
+.announcement-modal--compact {
+  height: auto;
+  max-height: min(calc(var(--app-vh) * 0.6), calc(var(--app-vh) - var(--app-pt) - 24px));
+}
+
+.announcement-modal__header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 16px 8px;
+  position: relative;
+  min-height: 56px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.announcement-modal__header:active {
+  cursor: grabbing;
+}
+
+.announcement-modal__drag-handle {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 35px;
+  height: 5px;
+  border-radius: 3px;
+  background: #3C3C434D;
+  z-index: 10;
+}
+
+.announcement-modal__close {
+  position: absolute;
+  right: 16px;
+  top: calc(50% + 4px);
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  color: #000000d9;
+  z-index: 10;
+}
+
+.announcement-modal__delete {
+  position: absolute;
+  left: 16px;
+  top: calc(50% + 4px);
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  z-index: 10;
+}
+
+.announcement-modal__report {
+  position: absolute;
+  left: 16px;
+  top: calc(50% + 4px);
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  padding: 0;
+  color: #000000d9;
+}
+
+.announcement-modal__back {
+  position: absolute;
+  left: 16px;
+  top: calc(50% + 4px);
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  color: #000000d9;
+  z-index: 10;
+}
+
+.announcement-modal__title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #000000D9;
+  margin: 0;
+  text-align: center;
+  flex: 1;
+}
+
+.announcement-modal__body {
+  padding: 0 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.announcement-modal__body-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #000000D9;
+  margin: 0 0 12px;
+}
+
+.announcement-modal__description {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #000000D9;
+  margin: 0 0 16px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.announcement-modal__author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.announcement-modal__author img,
+.announcement-modal__author .user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.announcement-modal__author span {
+  font-weight: 500;
+  color: #000000D9;
+}
+
+.announcement-modal__responded-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #32BA7626;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.announcement-modal__responded-icon {
+  color: #2D8B5D;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.announcement-modal__responded-text {
+  color: #2D8B5D;
+  font-weight: 500;
+}
+
+.announcement-modal__responses {
+  margin-top: 16px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 16px;
+}
+
+.announcement-modal__responses-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #7057F8;
+  margin-bottom: 12px;
+}
+
+.announcement-modal__responses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.announcement-modal__response-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: transparent;
+  padding: 4px 0;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.announcement-modal__response-item img,
+.announcement-modal__response-item .user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.announcement-modal__response-item span {
+  font-size: 16px;
+  font-weight: 500;
+  color: #000000D9;
+}
+
+.announcement-modal__responses-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.announcement-modal__responses-empty-icon {
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid #f6f6f6;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.announcement-modal__responses-empty-icon img {
+  width: 30px;
+  height: 30px;
+  display: block;
+}
+
+.announcement-modal__responses-empty-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.announcement-modal__body--success {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.announcement-modal__success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 12px 8px 24px;
+}
+
+.announcement-modal__success-icon {
+  width: min(40%, 160px);
+  height: auto;
+  margin-bottom: 20px;
+}
+
+.announcement-modal__success-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #000000D9;
+  margin: 0 0 8px;
+}
+
+.announcement-modal__success-text {
+  font-size: 16px;
+  color: #00000080;
+  margin: 0;
+  max-width: 320px;
+}
+
+.announcement-modal__success-socials {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+  width: 100%;
+}
+
+.announcement-modal__success-social {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #54506d0d;
+  color: #000000d9;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.2s;
+  /* Ник-онли сети рисуются кнопкой (копирование ника), а не ссылкой —
+     снимаем дефолтные рамку и шрифт кнопки */
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.announcement-modal__success-social:hover {
+  background: #54506d1a;
+}
+
+.announcement-modal__success-social--primal {
+  background: #7057f826;
+  color: #7057f8;
+}
+
+.announcement-modal__success-social--primal:hover {
+  background: #7057f833;
+}
+
+.announcement-modal__success-social-icon {
+  display: flex;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.announcement-modal__success-social-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.announcement-modal__input,
+.announcement-modal__textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 16px;
+  font-family: inherit;
+  margin-bottom: 12px;
+}
+
+.announcement-modal__input:focus,
+.announcement-modal__textarea:focus {
+  outline: none;
+  border-color: #7057F8;
+  box-shadow: 0 0 0 2px #7057F822;
+}
+
+.announcement-modal__counter {
+  text-align: right;
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 16px;
+}
+
+.announcement-modal__actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--bottom-actions-padding);
+  background: #fff;
+}
+
+/* Тень/blur только при просмотре объявления, не при редактировании */
+.announcement-modal__actions--view {
+  background: #ffffffd9;
+  box-shadow: 1px -3px 13px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  border-radius: 12px 12px 0 0;
+}
+
+.announcement-modal__btn {
+  width: 100%;
+  padding: var(--bottom-btn-padding);
+  border: none;
+  border-radius: var(--bottom-btn-radius);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.announcement-modal__btn--primary {
+  background: #775AFF;
+  color: #fff;
+}
+
+.announcement-modal__btn--primary:hover {
+  background: #6240e0;
+}
+
+.announcement-modal__btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+.announcement-modal__btn--secondary {
+  background: #54506D0D;
+  color: #7057F8;
+}
+
+.announcement-modal__btn--secondary:hover {
+  background: #54506D1A;
+}
+
+.announcement-modal__btn--danger {
+  background: #E9033A;
+  color: #fff;
+}
+
+.announcement-modal__btn--danger:hover {
+  background: #c70232;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

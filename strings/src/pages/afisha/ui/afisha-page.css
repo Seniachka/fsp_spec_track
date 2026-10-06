@@ -1,0 +1,494 @@
+/**
+ * Высота оболочки — общий рецепт в global.css (.page-shell + var(--app-vh)):
+ * height: var(--app-vh) + flex-колонка, обычный поток (НЕ position:fixed).
+ * Тот же приём, что на .events-page: баг ОТРИСОВКИ WebKit на iOS 26.x
+ * (Apple forums 813733, WebKit #297779) оставляет полноэкранный слой
+ * недокрашенным, а процентная цепочка от вьюпорт-юнитов его провоцирует.
+ * Поэтому вьюпорт-юнит + flex вместо height/max-height в процентах.
+ * min/max-height не возвращать и высоту локально не переопределять.
+ */
+
+.afisha-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.65)),
+    url('../../../assets/gradient_bg_white.png');
+  background-size: cover, cover;
+  background-position: center -200px;
+  background-repeat: no-repeat;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* .afisha-page__content — тот же общий рецепт в global.css: растягивается
+ * флексом родителя, без height: 100% (процентная цепочка от вьюпорт-юнитов
+ * и была источником бага в WKWebView). */
+
+.afisha-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px 0 15px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.afisha-page__title {
+  font-size: 40px;
+  font-weight: 600;
+  color: #000000d9;
+  margin: 0;
+  text-align: left;
+}
+
+/* Пилюля как в тулбаре профиля (.profile-buttons): полупрозрачный белый
+   поверх градиента .afisha-page::before. */
+.afisha-page__map-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 40px;
+  background-color: #ffffff66;
+  backdrop-filter: blur(8px);
+  color: #101828;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.afisha-page__map-btn:hover {
+  background-color: #ffffff99;
+}
+
+.afisha-page__map-btn:active {
+  transform: scale(0.96);
+}
+
+/* list-block — global */
+
+/* Страховка отрисовки iOS 26: у простыни свой композитный слой
+   (см. комментарий к .afisha-page). Модалки рендерятся снаружи. */
+.afisha-page__list-block {
+  transform: translateZ(0);
+}
+
+.afisha-page__scroll-area {
+  /* scroll + footer clearance — global */
+}
+
+.afisha-page__section {
+  margin-bottom: 32px;
+}
+
+.afisha-page__section:last-child {
+  margin-bottom: 0;
+}
+
+.afisha-page__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.afisha-page__section-title-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  font-weight: 600;
+  color: #7057F8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+}
+
+.afisha-page__section-title-btn svg {
+  width: 20px;
+  height: 20px;
+  color: #7057F8;
+}
+
+.afisha-page__scroll-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.afisha-page__events-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px 4px 8px;
+  max-width: 340px;
+}
+
+.afisha-page__events-empty-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #000000d9;
+}
+
+.afisha-page__events-empty-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #00000080;
+}
+
+.afisha-page__events-empty-btn {
+  margin-top: 8px;
+  border: none;
+  border-radius: var(--bottom-btn-radius);
+  padding: 10px 16px;
+  background: #775aff;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.afisha-page__events-empty-btn:hover {
+  background: #6240e0;
+}
+
+.afisha-page__scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.afisha-page__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.afisha-page__event-card {
+  flex: 0 0 53%;
+  min-width: 200px;
+  cursor: pointer;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: transform 0.2s;
+}
+
+.afisha-page__event-card:hover {
+  transform: translateY(-4px);
+}
+
+.afisha-page__event-card-image {
+  overflow: hidden;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 96px;
+}
+
+.afisha-page__event-card-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 180px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.afisha-page__event-card-image-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(135deg, #e8e4ff 0%, #f3f4f6 100%);
+}
+
+.afisha-page__event-card-body {
+  padding: 12px 10px 14px;
+}
+
+.afisha-page__event-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000000D9;
+  margin: 0 0 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.afisha-page__event-card-date {
+  font-size: 14px;
+  color: #000000d9;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.afisha-page__view-all {
+  flex: 0 0 80px;
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.afisha-page__view-all-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #F6F6F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 300;
+  color: #775AFF;
+  margin-bottom: 6px;
+}
+
+.afisha-page__view-all-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #7057F8;
+}
+
+.afisha-page__announcement-card {
+  --afisha-ann-pad: 16px;
+  --afisha-ann-title-h: 16px;
+  --afisha-ann-title-mb: 10px;
+  --afisha-ann-desc-h: 34px; /* 14 + 6 + 14 как у скелетона */
+  --afisha-ann-desc-mb: 16px;
+  --afisha-ann-author-h: 32px;
+  --afisha-ann-h: calc(
+    var(--afisha-ann-pad) * 2 + var(--afisha-ann-title-h) + var(--afisha-ann-title-mb) +
+      var(--afisha-ann-desc-h) + var(--afisha-ann-desc-mb) + var(--afisha-ann-author-h)
+  );
+
+  box-sizing: border-box;
+  flex: 0 0 72%;
+  min-width: 240px;
+  height: var(--afisha-ann-h);
+  background: #F6F6F6;
+  border-radius: 16px;
+  padding: var(--afisha-ann-pad);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s;
+}
+
+.afisha-page__announcement-card:hover {
+  transform: translateY(-4px);
+}
+
+.afisha-page__announcement-card-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.afisha-page__announcement-card-title {
+  box-sizing: border-box;
+  flex: 0 0 var(--afisha-ann-title-h);
+  height: var(--afisha-ann-title-h);
+  margin: 0 0 var(--afisha-ann-title-mb);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: var(--afisha-ann-title-h);
+  color: #000000D9;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  line-clamp: 1;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.afisha-page__announcement-card-description {
+  box-sizing: border-box;
+  flex: 0 0 var(--afisha-ann-desc-h);
+  height: var(--afisha-ann-desc-h);
+  margin: 0 0 var(--afisha-ann-desc-mb);
+  font-size: 14px;
+  line-height: 17px;
+  color: #000000D9;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.afisha-page__announcement-card-author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 var(--afisha-ann-author-h);
+  height: var(--afisha-ann-author-h);
+}
+
+.afisha-page__announcement-card-author img,
+.afisha-page__announcement-card-author .user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.afisha-page__announcement-card-author span {
+  font-size: 14px;
+  font-weight: 500;
+  color: #000000D9;
+}
+
+.afisha-page__create-announcement {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 16px;
+  /* Нижний зазор под футер даёт padding-bottom: var(--footer-clearance)
+     у .afisha-page__scroll-area (global.css) — здесь его дублировать не нужно.
+     Эти 16px — только отбивка последней кнопки от края простыни. */
+  margin-bottom: 16px;
+  padding: var(--bottom-btn-padding);
+  border: none;
+  border-radius: var(--bottom-btn-radius);
+  background: #775aff;
+  font-size: 16px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+  position: relative;
+  z-index: 7;
+}
+
+.afisha-page__create-announcement:hover {
+  background: #6240e0;
+}
+
+.afisha-page__event-card--skeleton,
+.afisha-page__announcement-card--skeleton {
+  cursor: default;
+  pointer-events: none;
+}
+
+.afisha-page__event-card--skeleton:hover,
+.afisha-page__announcement-card--skeleton:hover {
+  transform: none;
+}
+
+.afisha-page__skeleton-block {
+  position: relative;
+  overflow: hidden;
+  background: #e8e8ee;
+  border-radius: 6px;
+}
+
+.afisha-page__skeleton-block::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 45%,
+    rgba(255, 255, 255, 0.7) 50%,
+    rgba(255, 255, 255, 0.55) 55%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: afisha-skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.afisha-page__skeleton-block--event-image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 0;
+}
+
+.afisha-page__skeleton-block--event-title {
+  height: 16px;
+  width: 78%;
+  margin-bottom: 8px;
+}
+
+.afisha-page__skeleton-block--event-date {
+  height: 14px;
+  width: 46%;
+}
+
+.afisha-page__skeleton-block--ann-title {
+  height: var(--afisha-ann-title-h, 16px);
+  width: 70%;
+  margin-bottom: var(--afisha-ann-title-mb, 10px);
+}
+
+.afisha-page__skeleton-block--ann-desc {
+  height: 14px;
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.afisha-page__skeleton-block--ann-desc-short {
+  height: 14px;
+  width: 62%;
+  margin-bottom: var(--afisha-ann-desc-mb, 16px);
+}
+
+.afisha-page__skeleton-block--ann-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.afisha-page__skeleton-block--ann-name {
+  height: 14px;
+  width: 96px;
+}
+
+.afisha-page__event-card--skeleton:nth-child(2) .afisha-page__skeleton-block::after,
+.afisha-page__announcement-card--skeleton:nth-child(2) .afisha-page__skeleton-block::after {
+  animation-delay: 0.15s;
+}
+
+@keyframes afisha-skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .afisha-page__skeleton-block::after {
+    animation: none;
+  }
+}
