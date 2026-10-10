@@ -12,7 +12,7 @@ from app.config import settings
 from app.db import Base, SessionLocal, engine, get_db
 from app.deps import require_role
 from app.errors import ApiError
-from app.routers import auth, candidate, catalog, employer
+from app.routers import auth, bank, candidate, catalog, employer
 from app.seed import seed
 from app.services.validation import matching_report
 
@@ -78,6 +78,7 @@ app.include_router(auth.router, prefix=api)
 app.include_router(catalog.router, prefix=api)
 app.include_router(candidate.router, prefix=api)
 app.include_router(employer.router, prefix=api)
+app.include_router(bank.router, prefix=api)
 
 
 @app.get(f"{api}/health")

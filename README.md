@@ -58,3 +58,15 @@ Postgres поднимается сервисом `db`. Это основной �
 cd backend
 .\.venv\Scripts\python -m pytest tests -q
 ```
+
+## Карта навыков и открытый банк заданий
+
+Страница «Навыки и задания» (`/skills`, ссылка в шапке) показывает требования по должностям, все навыки и все вопросы и задачи. Данные лежат в `data/` и собираются скриптами:
+
+```powershell
+python scripts/fetch_hh_vacancies.py   # data/hh_it_vacancies.json — вакансии hh.ru, 8 специальностей × 5 грейдов
+python scripts/build_skill_map.py      # data/skill_map.json — навыки по должностям с уровнями core/expected
+python scripts/build_task_bank.py      # data/task_bank.json — темы, теория (одиночный/множественный выбор), практика
+```
+
+Знания по темам лежат в `scripts/bank_knowledge/*.py`: факты с ложными двойниками, термины и авторские вопросы; из них генератор делает варианты вопросов, а из эталонных решений в `practice.py` — по 20 тестов на задачу. API: `/api/v1/bank/overview`, `/bank/positions/{spec}/{grade}`, `/bank/skills/{code}`, `/bank/theory?skill=&grade=&topic=&kind=&q=`, `/bank/practice`, `/bank/items/{id}`. Каталог папки `data/` можно переопределить переменной `BANK_DATA_DIR` (в compose смонтирована как `/app/data`).

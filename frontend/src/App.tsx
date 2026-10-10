@@ -3,6 +3,7 @@ import { Guard, HomeRedirect, Shell } from "./shell";
 import { AuthPage, Landing } from "./pages/public";
 import { CandidateHome, CandidateInvites, ProfilePage, SettingsPage, TestPage, VacanciesPage } from "./pages/candidate";
 import { CompanyPage, EmployerHome, EmployerInvites, NeedForm, SearchPage, ShortlistPage } from "./pages/employer";
+import { SkillsPage } from "./pages/skills";
 
 export function App() {
   return (
@@ -11,6 +12,7 @@ export function App() {
         <Route path="/" element={<><HomeRedirect /><Landing /></>} />
         <Route path="/login" element={<AuthPage mode="login" />} />
         <Route path="/register" element={<AuthPage mode="register" />} />
+        <Route path="/skills" element={<SkillsPage />} />
         <Route element={<Guard role="candidate" />}>
           <Route path="/c" element={<CandidateHome />} />
           <Route path="/c/test" element={<TestPage />} />

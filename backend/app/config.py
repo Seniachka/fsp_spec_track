@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     auto_verify: bool = True
     exposure_cap: int = 1000
     session_minutes: int = 30
+    # каталог навыков и банк заданий, собранные скриптами из scripts/ (data/*.json)
+    bank_data_dir: str = ""
 
 
 settings = Settings()

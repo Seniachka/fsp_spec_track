@@ -17,6 +17,9 @@ services:
       JWT_SECRET: dev-only-change-me
       SEED: "1"
       AUTO_VERIFY: "1"
+      BANK_DATA_DIR: /app/data
+    volumes:
+      - ./data:/app/data:ro
     ports:
       - "8000:8000"
     depends_on:

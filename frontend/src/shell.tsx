@@ -11,13 +11,12 @@ export function Shell() {
     <>
       <header className="topbar">
         <NavLink to="/" className="brand">РАЗ<span>РЯД</span></NavLink>
-        {user && (
-          <nav className="nav">
-            {links.map(([to, label]) => (
-              <NavLink key={to} to={to} end={to === "/c" || to === "/e"}>{label}</NavLink>
-            ))}
-          </nav>
-        )}
+        <nav className="nav">
+          {user && links.map(([to, label]) => (
+            <NavLink key={to} to={to} end={to === "/c" || to === "/e"}>{label}</NavLink>
+          ))}
+          <NavLink to="/skills" className="nav-public">Навыки и задания</NavLink>
+        </nav>
         <div className="spacer">
           {user && <span className="who">{user.name}</span>}
           {user && <button className="btn-ghost" onClick={() => { logout(); navigate("/login"); }}>Выйти</button>}
