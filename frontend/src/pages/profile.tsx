@@ -1,7 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { api } from "../api";
-import { useAuth } from "../auth";
 
 type Experience = {
   role_title: string;
@@ -78,8 +77,6 @@ function Status({ error, saved }: { error: string; saved: boolean }) {
 }
 
 export function ProfilePersonal() {
-  const navigate = useNavigate();
-  const { logout } = useAuth();
   const { me, error, setError, saved, save } = useProfile();
   const [profile, setProfile] = useState<any>(null);
   const [first, setFirst] = useState("");
@@ -162,10 +159,7 @@ export function ProfilePersonal() {
     <form className="card stack" onSubmit={(event) => onSubmit(event)}>
       <h3>Личные данные</h3>
       <Status error={error} saved={saved} />
-      <div className="account-row">
-        <label className="field"><span>Почта</span><input value={profile.email || ""} readOnly /></label>
-        <button className="btn-ghost" type="button" onClick={() => { logout(); navigate("/login"); }}>Выйти</button>
-      </div>
+      <label className="field"><span>Почта</span><input value={profile.email || ""} readOnly /></label>
       <div className="grid-2">
         <label className="field"><span>Имя</span><input value={first} onChange={(e) => setFirst(e.target.value)} /></label>
         <label className="field"><span>Фамилия</span><input value={last} onChange={(e) => setLast(e.target.value)} /></label>

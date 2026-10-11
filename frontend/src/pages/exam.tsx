@@ -52,6 +52,19 @@ function pad(value: number) {
   return String(value).padStart(2, "0");
 }
 
+function nextAttemptMessage(iso?: string | null) {
+  if (!iso) return "Новая попытка сейчас недоступна.";
+  const normalized = /[zZ]|[+-]\d{2}:\d{2}$/.test(iso) ? iso : `${iso}Z`;
+  const formatted = new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(normalized));
+  return `Новая попытка будет доступна ${formatted}.`;
+}
+
 function formatClock(total: number) {
   const seconds = Math.max(0, total);
   return `${pad(Math.floor(seconds / 60))}:${pad(seconds % 60)}`;
@@ -83,6 +96,7 @@ export function TestPage() {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
   const [ready, setReady] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const submitting = useRef(false);
 
   useEffect(() => {
@@ -92,7 +106,7 @@ export function TestPage() {
       if (rules.can_start_down && !rules.can_start_initial) setPurpose("down");
       else if (rules.can_start_up && !rules.can_start_initial) setPurpose("up");
       else if (!rules.can_start_initial && !rules.can_start_down && !rules.can_start_up) {
-        setBlocked("Новая попытка сейчас недоступна. Если грейд уже запечатан, смена откроется после паузы.");
+        setBlocked(nextAttemptMessage(rules.next_attempt_at || rules.grade_change_allowed_at));
       }
     }).catch(() => undefined);
     api("/assessments/current")
@@ -294,7 +308,7 @@ export function TestPage() {
             ))}
           </div>
         </div>
-        {!result && <button className="btn-red" type="button" onClick={submit}>Сдать экзамен</button>}
+        {!result && <button className="btn-red" type="button" onClick={() => setConfirmOpen(true)}>Сдать экзамен</button>}
       </aside>
       <div className="stack">
         {result && (
@@ -406,6 +420,18 @@ export function TestPage() {
           {result && item.explanation && <p className="ok">{item.explanation}</p>}
         </section>
       </div>
+      {confirmOpen && !result && (
+        <div className="confirm-backdrop" onClick={() => setConfirmOpen(false)}>
+          <div className="card stack confirm-dialog" onClick={(event) => event.stopPropagation()}>
+            <h2>Сдать экзамен?</h2>
+            <p>После сдачи ответы изменить нельзя. Пустые вопросы и задачи зачтутся как нерешённые.</p>
+            <div className="actions">
+              <button className="btn-ghost" type="button" onClick={() => setConfirmOpen(false)}>Вернуться</button>
+              <button className="btn-red" type="button" onClick={() => { setConfirmOpen(false); submit(); }}>Сдать</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

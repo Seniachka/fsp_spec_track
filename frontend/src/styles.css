@@ -221,6 +221,17 @@ textarea { min-height: 140px; font-family: ui-monospace, Consolas, monospace; }
 .exam-score { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 12px; }
 .exam-score b { font-family: Unbounded, sans-serif; font-size: 28px; }
 .choice.right { border-color: var(--ok); background: #e7f6ee; }
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(27, 23, 20, 0.35);
+}
+.confirm-dialog { width: min(440px, 100%); }
 
 .exam-nav {
   position: sticky;

@@ -122,10 +122,20 @@ def policy(db: Session, profile: CandidateProfile) -> dict:
     can_accept_intern = bool(
         not sealed and profile.initial_failed_at and last_grade and last_grade.code == "junior"
     )
+    next_attempt_at = None
+    if not can_initial and not can_down and not can_up:
+        openings = []
+        if cooldown and profile.grade_change_allowed_at:
+            openings.append(profile.grade_change_allowed_at)
+        if failed_recently and profile.initial_failed_at:
+            openings.append(profile.initial_failed_at + timedelta(days=7))
+        if openings:
+            next_attempt_at = min(openings)
     return {
         "sealed": sealed,
         "cooldown_active": cooldown,
         "grade_change_allowed_at": profile.grade_change_allowed_at.isoformat() if profile.grade_change_allowed_at else None,
+        "next_attempt_at": next_attempt_at.isoformat() + "Z" if next_attempt_at else None,
         "can_start_initial": can_initial,
         "can_start_down": can_down,
         "can_start_up": can_up,

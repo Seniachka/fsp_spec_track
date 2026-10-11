@@ -18,9 +18,9 @@ export function Shell() {
           ))}
           <NavLink to="/skills" className="nav-public">Навыки и задания</NavLink>
         </nav>
-        {user?.role === "employer" && (
+        {user && (
           <div className="spacer">
-            <span className="who">{user.name}</span>
+            <span className="who">{user.name || user.email}</span>
             <button className="btn-ghost" onClick={() => { logout(); navigate("/login"); }}>Выйти</button>
           </div>
         )}
