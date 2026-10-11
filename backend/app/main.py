@@ -73,6 +73,16 @@ def handle_validation(_: Request, exc: RequestValidationError):
     )
 
 
+@app.get("/")
+def root():
+    return {
+        "service": "Разряд API",
+        "docs": "/docs",
+        "health": "/api/v1/health",
+        "ui": "http://127.0.0.1:5173",
+    }
+
+
 api = "/api/v1"
 app.include_router(auth.router, prefix=api)
 app.include_router(catalog.router, prefix=api)

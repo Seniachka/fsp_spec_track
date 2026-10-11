@@ -31,14 +31,90 @@ npm run dev
 
 ## Docker
 
+Так поднимается всё приложение сразу: Postgres, API и интерфейс. Команды ниже — из корня репозитория.
+
+### Что нужно
+
+- [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/) с бэкендом WSL 2 (на Windows 10/11). На macOS и Linux — Docker Desktop или Docker Engine с плагином Compose.
+- Свободные порты `5432`, `8000` и `8080`.
+
+Проверка, что клиент видит демон:
+
 ```powershell
-docker compose up --build
+docker compose version
 ```
 
-Интерфейс: http://127.0.0.1:8080  
-API и OpenAPI: http://127.0.0.1:8000/docs
+Если команда `docker` не находится, установите Docker Desktop и откройте его из меню Пуск. Дождитесь статуса Engine running.
 
-Postgres поднимается сервисом `db`. Это основной способ сдачи. На машине без Docker достаточно инструкций выше.
+На Windows 10/11 движку нужен компонент Virtual Machine Platform (бэкенд WSL 2). Если Docker пишет, что он не включён, в PowerShell от администратора:
+
+```powershell
+Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux -All -NoRestart
+Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform -All -NoRestart
+```
+
+После этого перезагрузите компьютер и снова откройте Docker Desktop. В BIOS/UEFI должна быть включена виртуализация (Intel VT-x или AMD-V).
+
+### Запуск
+
+```powershell
+docker compose up --build -d
+```
+
+Первый запуск скачивает `postgres:16` и собирает образы API и интерфейса. Это несколько минут. API сам дожидается базы, создаёт схему и учебные учётки (`SEED=1`, почта подтверждается через `AUTO_VERIFY=1`). Повторный запуск без `--build` использует уже собранные образы.
+
+| Сервис | Что это | Порт |
+| --- | --- | --- |
+| `db` | Postgres 16, база `razryad`, пользователь и пароль `razryad` | 5432 |
+| `api` | FastAPI, каталог `data/` смонтирован в `/app/data` только для чтения | 8000 |
+| `web` | nginx со собранным интерфейсом, `/api/` проксируется на `api` | 8080 |
+
+- Интерфейс: http://127.0.0.1:8080
+- OpenAPI: http://127.0.0.1:8000/docs
+- Проверка API: http://127.0.0.1:8000/api/v1/health — ответ `{"status":"ok"}`
+
+Состояние:
+
+```powershell
+docker compose ps
+```
+
+У всех трёх сервисов в колонке STATUS должно быть `Up`.
+
+### Остановка
+
+```powershell
+docker compose stop
+```
+
+Контейнеры останавливаются, данные Postgres остаются в томе `razryad-db`. Снова поднять без пересборки: `docker compose start`.
+
+Убрать контейнеры и сеть, том с базой оставить:
+
+```powershell
+docker compose down
+```
+
+Удалить и данные базы (следующий запуск снова создаст учебные учётки):
+
+```powershell
+docker compose down -v
+```
+
+### Логи и пересборка
+
+```powershell
+docker compose logs -f api
+docker compose logs -f web
+```
+
+После правок в `backend/` или `frontend/` пересоберите образы:
+
+```powershell
+docker compose up --build -d
+```
+
+Файлы в `data/` (карта навыков и банк заданий) подхватываются без пересборки: каталог примонтирован в API. Если API уже прочитал их в кэш процесса, перезапустите его: `docker compose restart api`.
 
 ## Учебные входы
 
