@@ -139,6 +139,22 @@ def test_failed_test_does_not_assign_grade_and_form_stays_comparable(client):
     assert submitted.json()["outcome"] == "fail"
     again = client.get("/api/v1/me", headers=auth(token)).json()
     assert again["grade"] is None
+    assert again["policy"]["can_start_initial"] is True
+    assert again["policy"]["next_attempt_at"] is None
+    retry = client.post(
+        "/api/v1/assessments/sessions",
+        headers=auth(token),
+        json={"specialization_code": "backend", "claimed_grade": "middle", "purpose": "initial"},
+    )
+    assert retry.status_code == 201, retry.text
+
+
+def test_demo_profiles_skip_grade_cooldown(client):
+    token = login(client, "igor@example.com")
+    me = client.get("/api/v1/me", headers=auth(token)).json()
+    assert me["policy"]["cooldown_active"] is False
+    assert me["policy"]["next_attempt_at"] is None
+    assert me["policy"]["can_start_up"] is True
 
 
 def test_validation_thresholds(client):

@@ -14,6 +14,7 @@ from app.models import (
     CandidateProfile,
     Grade,
     Specialization,
+    User,
 )
 from app.routers.bank import _bank, _skill_map
 from app.security import new_token, utcnow
@@ -97,14 +98,22 @@ def open_session(db: Session, candidate_id: int) -> AssessmentSession | None:
     )
 
 
+def _demo_candidate(db: Session, profile: CandidateProfile) -> bool:
+    user = db.get(User, profile.user_id)
+    return bool(user and user.email.endswith("@example.com"))
+
+
 def policy(db: Session, profile: CandidateProfile) -> dict:
     now = utcnow()
     sealed = profile.grade_id is not None
-    cooldown = bool(sealed and profile.grade_change_allowed_at and profile.grade_change_allowed_at > now)
+    demo = _demo_candidate(db, profile)
+    cooldown = bool(
+        not demo and sealed and profile.grade_change_allowed_at and profile.grade_change_allowed_at > now
+    )
     last = latest_session(db, profile.user_id)
     last_grade = db.get(Grade, last.claimed_grade_id) if last else None
     failed_recently = False
-    if profile.initial_failed_at is not None:
+    if not demo and profile.initial_failed_at is not None:
         failed_recently = now - profile.initial_failed_at < timedelta(days=7)
     current = db.get(Grade, profile.grade_id) if profile.grade_id else None
     pending = db.get(Grade, profile.pending_grade_id) if profile.pending_grade_id else None
@@ -496,7 +505,8 @@ def _seal(profile: CandidateProfile, grade: Grade, score: float, spec_id: int) -
     profile.test_score = score
     profile.test_scored_at = now
     profile.grade_sealed_at = now
-    profile.grade_change_allowed_at = now + timedelta(days=90)
+    email = profile.user.email if profile.user is not None else ""
+    profile.grade_change_allowed_at = None if email.endswith("@example.com") else now + timedelta(days=90)
     profile.pending_grade_id = None
     profile.pending_score = None
     profile.initial_failed_at = None

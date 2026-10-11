@@ -37,7 +37,6 @@ function RatingPanel({ rating }: { rating: any }) {
         {rating.freshness < 1 && <p className="muted rate-note">Тест старше 90 дней, соответствие умножено на 0,85</p>}
       </div>
       <aside className="rating-why">
-        <p>Почему в топе</p>
         <ul>
           {(rating.reasons || []).map((reason: any) => (
             <li key={reason.code} className={reason.ok ? "on" : "off"}>
@@ -267,12 +266,11 @@ export function ShortlistPage() {
   const [smax, setSmax] = useState("");
   const [tags, setTags] = useState<Tag[]>([]);
   const [stack, setStack] = useState<string[]>([]);
-  const [fspOnly, setFspOnly] = useState(false);
 
-  async function load(only = fspOnly) {
+  async function load() {
     const [needRow, people, invites] = await Promise.all([
       api(`/needs/${id}`),
-      api(`/needs/${id}/shortlist${only ? "?fsp_only=true" : ""}`),
+      api(`/needs/${id}/shortlist`),
       api<any[]>("/invitations"),
     ]);
     setNeed(needRow);
@@ -332,7 +330,7 @@ export function ShortlistPage() {
       setNeed(updated);
       setConfirm(false);
       setEditing(false);
-      setRows(await api(`/needs/${id}/shortlist${fspOnly ? "?fsp_only=true" : ""}`));
+      setRows(await api(`/needs/${id}/shortlist`));
     } catch (err) {
       setConfirm(false);
       setError(err instanceof Error ? err.message : "Ошибка");
@@ -392,28 +390,12 @@ export function ShortlistPage() {
         </form>
       )}
       {error && <p className="banner">{error}</p>}
-      <div className="vac-head">
-        <h2>Кандидаты</h2>
-        <label className="consent">
-          <input
-            type="checkbox"
-            checked={fspOnly}
-            onChange={(event) => {
-              const next = event.target.checked;
-              setFspOnly(next);
-              api(`/needs/${id}/shortlist${next ? "?fsp_only=true" : ""}`).then(setRows).catch((err) => setError(err.message));
-            }}
-          />
-          Только с достижениями ФСП
-        </label>
-      </div>
-      <p className="muted">Список отсортирован по соответствию потребности: насколько человек подходит этой вакансии. Полоски показывают, из чего сложился процент.</p>
+      <h2>Кандидаты</h2>
       <div className="people">
         {rows.map((row) => (
           <Person key={row.id} row={row} invited={invited.includes(row.id)} onInvite={invited.includes(row.id) ? undefined : invite} />
         ))}
       </div>
-      <p className="muted">Факторы видны в карточке кандидата. Фильтр «только с достижениями ФСП» можно включить и выключить.</p>
       {confirm && (
         <div className="confirm-backdrop" onClick={() => setConfirm(false)}>
           <form className="card confirm-dialog stack" onClick={(event) => event.stopPropagation()} onSubmit={save}>

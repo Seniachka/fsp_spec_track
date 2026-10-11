@@ -1,7 +1,6 @@
 """Идемпотентный учебный набор. Повторный запуск не плодит дубликаты."""
 
 import json
-from datetime import timedelta
 from pathlib import Path
 
 from sqlalchemy.orm import Session
@@ -208,10 +207,24 @@ def refresh_stack_catalog(db: Session) -> None:
     db.commit()
 
 
+def release_demo_attempt_lock(db: Session) -> None:
+    """Учебные профили сдают тест сразу: без паузы 7 и 90 дней."""
+    rows = (
+        db.query(CandidateProfile)
+        .join(User, User.id == CandidateProfile.user_id)
+        .filter(User.email.like("%@example.com"))
+        .all()
+    )
+    for profile in rows:
+        profile.grade_change_allowed_at = None
+    db.commit()
+
+
 def seed(db: Session) -> None:
     if db.query(User).filter(User.email == "marina@example.com").first():
         refresh_code_bank(db)
         refresh_stack_catalog(db)
+        release_demo_attempt_lock(db)
         return
     password_hash = hash_password("demo1234")
     specs = {}
@@ -292,7 +305,7 @@ def seed(db: Session) -> None:
             test_score=score,
             test_scored_at=now if score is not None else None,
             grade_sealed_at=now if grade else None,
-            grade_change_allowed_at=(now + timedelta(days=90)) if grade else None,
+            grade_change_allowed_at=None,
             fsp_participant_id=participant_id,
         )
         db.add(profile)
