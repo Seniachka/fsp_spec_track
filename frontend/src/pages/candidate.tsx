@@ -31,14 +31,13 @@ export function CandidateHome() {
         {me.policy?.can_confirm_pending && <p className="ok">Есть сильный результат. Его можно оставить или попробовать грейд выше.</p>}
         <div className="chips">{me.stack?.map((tag: any) => <span className="chip" key={tag.code}>{tag.title}</span>)}</div>
       </section>
-      <section className="card stack">
+      <section className="card fsp-card">
         <p className="eyebrow">ФСП</p>
         {me.fsp_empty ? (
-          <>
+          <div className="fsp-empty">
             <h2>Истории ФСП нет</h2>
-            <p>Это обычное состояние. Категория и приглашения от него не зависят. Бонуса достижений в ранге просто нет.</p>
-            <Link to="/c/profile">Привязать ID</Link>
-          </>
+            <Link className="btn-red" to="/c/profile#fsp">Привязать</Link>
+          </div>
         ) : (
           me.fsp.map((item: any) => (
             <article key={item.competition + item.discipline}>

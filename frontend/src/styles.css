@@ -267,6 +267,19 @@ textarea { min-height: 120px; }
 .exam-start { width: min(680px, 100%); }
 .account-row { display: flex; gap: 12px; align-items: flex-end; }
 .account-row .field { flex: 1; }
+.fsp-card { display: flex; flex-direction: column; gap: 14px; }
+.fsp-card .eyebrow { margin-bottom: 0; }
+.fsp-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 18px;
+  min-height: 148px;
+  padding: 20px 8px 6px;
+}
 .fsp-link { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 .fsp-link input { width: auto; flex: 1; min-width: 180px; }
 .exam-shell { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
