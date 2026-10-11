@@ -289,7 +289,7 @@ export function TestPage() {
                 onClick={() => setStep(session.items.indexOf(question))}
               >
                 <b>{index + 1}</b>
-                <span>{question.role_title}</span>
+                <span>{question.title}</span>
               </button>
             ))}
           </div>
@@ -306,7 +306,6 @@ export function TestPage() {
               <div><b>{Math.round(result.practice_score)}</b><p className="muted">практика</p></div>
             </div>
             <p>{result.outcome === "fail" ? "Заявленный грейд не подтверждён." : "Результат записан."}</p>
-            <p className="muted">Итог = половина теории и половина практики. Решить всё за час почти невозможно — в рейтинг идёт доля и скорость.</p>
             {result.policy?.can_confirm_pending && <p className="ok">Балл высокий. Можно оставить этот грейд или попробовать выше.</p>}
             <div className="actions">
               {result.policy?.can_confirm_pending && <button className="btn" onClick={async () => { await api("/me/grade/confirm", "POST"); setResult({ ...result, policy: { ...result.policy, can_confirm_pending: false } }); }}>Оставить этот грейд</button>}

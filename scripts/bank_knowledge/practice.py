@@ -164,7 +164,7 @@ task(
     _two_sum,
     lambda rng: [ints(rng, rng.randint(0, 12), -10, 20), rng.randint(-5, 25)],
     samples=[[[2, 7, 11, 15], 9], [[3, 3], 6], [[1], 2]],
-    hint="Один проход с множеством увиденных чисел — O(n).",
+    hint="Время O(n), память O(n).",
 )
 
 
@@ -379,7 +379,7 @@ task(
     _longest_unique,
     lambda rng: [word(rng, rng.randint(0, 16), "abcde")],
     samples=[["abcabcbb"], ["bbbb"], [""]],
-    hint="Скользящее окно и позиция последнего вхождения символа.",
+    hint="Время O(n), память O(min(n, |Σ|)).",
 )
 
 
@@ -632,7 +632,7 @@ task(
     _lis,
     lambda rng: [ints(rng, rng.randint(0, 14), 0, 15)],
     samples=[[[10, 9, 2, 5, 3, 7, 101, 18]]],
-    hint="O(n log n) через массив минимальных хвостов.",
+    hint="Время O(n log n), память O(n).",
 )
 
 

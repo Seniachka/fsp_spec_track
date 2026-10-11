@@ -87,44 +87,6 @@ export function CandidateInvites() {
   );
 }
 
-export function SettingsPage() {
-  const [me, setMe] = useState<Profile>(null);
-  const [participant, setParticipant] = useState("");
-  const [error, setError] = useState("");
-  useEffect(() => { api("/me").then(setMe); }, []);
-  if (!me) return <p>Загрузка…</p>;
-  async function toggle(published: boolean) {
-    setError("");
-    try { setMe({ ...me, ...(await api("/me/privacy", "PUT", { published, show_in_search: published })) }); }
-    catch (err) { setError(err instanceof Error ? err.message : "Ошибка"); }
-  }
-  async function link(event: FormEvent) {
-    event.preventDefault();
-    setError("");
-    try { setMe(await api("/me/fsp-link", "POST", { participant_id: participant })); }
-    catch (err) { setError(err instanceof Error ? err.message : "Ошибка"); }
-  }
-  return (
-    <section className="stack">
-      <article className="card stack">
-        <h2>Кто меня видит</h2>
-        {error && <p className="banner">{error}</p>}
-        <p>Публикация профиля: {me.published ? "включена" : "выключена"}.</p>
-        <button className="btn" onClick={() => toggle(!me.published)}>{me.published ? "Скрыть из подборок" : "Снова показывать"}</button>
-      </article>
-      <article className="card stack">
-        <h2>ID участника ФСП</h2>
-        <p>{me.fsp_participant_id ? `Привязан ${me.fsp_participant_id}` : "История не привязана. Профиль от этого не ломается."}</p>
-        <form className="actions" onSubmit={link}>
-          <input value={participant} onChange={(e) => setParticipant(e.target.value)} placeholder="FSP-1001" />
-          <button className="btn-red" type="submit">Привязать</button>
-        </form>
-        {me.fsp_participant_id && <button className="btn-ghost" onClick={async () => setMe(await api("/me/fsp-link", "DELETE"))}>Отвязать</button>}
-      </article>
-    </section>
-  );
-}
-
 export function VacanciesPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [error, setError] = useState("");

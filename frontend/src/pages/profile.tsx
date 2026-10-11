@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { api } from "../api";
+import { useAuth } from "../auth";
 
 type Experience = {
   role_title: string;
@@ -78,7 +79,9 @@ function Status({ error, saved }: { error: string; saved: boolean }) {
 
 export function ProfilePersonal() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const { me, error, setError, saved, save } = useProfile();
+  const [profile, setProfile] = useState<any>(null);
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
   const [about, setAbout] = useState("");
@@ -86,6 +89,7 @@ export function ProfilePersonal() {
   const [telegram, setTelegram] = useState("");
   const [smin, setSmin] = useState("");
   const [smax, setSmax] = useState("");
+  const [participant, setParticipant] = useState("");
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -97,10 +101,11 @@ export function ProfilePersonal() {
     setTelegram(me.telegram || "");
     setSmin(me.desired_salary_min ?? "");
     setSmax(me.desired_salary_max ?? "");
+    setProfile(me);
     setReady(true);
   }, [me, ready]);
 
-  if (!me) return <p>{error || "Загрузка…"}</p>;
+  if (!me || !profile) return <p>{error || "Загрузка…"}</p>;
 
   function payload() {
     return {
@@ -124,11 +129,43 @@ export function ProfilePersonal() {
     }
   }
 
+  async function toggle(published: boolean) {
+    setError("");
+    try {
+      const updated = await api("/me/privacy", "PUT", { published, show_in_search: published });
+      setProfile({ ...profile, ...updated });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Ошибка");
+    }
+  }
+
+  async function link() {
+    setError("");
+    try {
+      setProfile(await api("/me/fsp-link", "POST", { participant_id: participant }));
+      setParticipant("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Ошибка");
+    }
+  }
+
+  async function unlink() {
+    setError("");
+    try {
+      setProfile(await api("/me/fsp-link", "DELETE"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Ошибка");
+    }
+  }
+
   return (
     <form className="card stack" onSubmit={(event) => onSubmit(event)}>
       <h3>Личные данные</h3>
       <Status error={error} saved={saved} />
-      <label className="field"><span>Почта</span><input value={me.email || ""} readOnly /></label>
+      <div className="account-row">
+        <label className="field"><span>Почта</span><input value={profile.email || ""} readOnly /></label>
+        <button className="btn-ghost" type="button" onClick={() => { logout(); navigate("/login"); }}>Выйти</button>
+      </div>
       <div className="grid-2">
         <label className="field"><span>Имя</span><input value={first} onChange={(e) => setFirst(e.target.value)} /></label>
         <label className="field"><span>Фамилия</span><input value={last} onChange={(e) => setLast(e.target.value)} /></label>
@@ -141,6 +178,20 @@ export function ProfilePersonal() {
       <div className="grid-2">
         <label className="field"><span>Ожидания от, ₽</span><input type="number" min={0} value={smin} onChange={(e) => setSmin(e.target.value)} /></label>
         <label className="field"><span>Ожидания до, ₽</span><input type="number" min={0} value={smax} onChange={(e) => setSmax(e.target.value)} /></label>
+      </div>
+      <div className="stack" id="fsp">
+        <h3>ID участника ФСП</h3>
+        <p>{profile.fsp_participant_id ? `Привязан ${profile.fsp_participant_id}` : "История не привязана."}</p>
+        <div className="fsp-link">
+          <input value={participant} onChange={(e) => setParticipant(e.target.value)} placeholder="FSP-1001" />
+          <button className="btn-red" type="button" onClick={link}>Привязать</button>
+        </div>
+        {profile.fsp_participant_id && <button className="btn-ghost" type="button" onClick={unlink}>Отвязать</button>}
+      </div>
+      <div className="stack">
+        <h3>Кто меня видит</h3>
+        <p>Публикация профиля: {profile.published ? "включена" : "выключена"}.</p>
+        <button className="btn" type="button" onClick={() => toggle(!profile.published)}>{profile.published ? "Скрыть из подборок" : "Снова показывать"}</button>
       </div>
       <div className="actions">
         <button className="btn-red" type="submit">Сохранить</button>

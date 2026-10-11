@@ -375562,7 +375562,7 @@
    "starter": "def solve(nums: list[int], target: int):\n    pass\n",
    "language": "python3.12",
    "time_limit_minutes": 10,
-   "complexity_hint": "Один проход с множеством увиденных чисел — O(n).",
+   "complexity_hint": "Время O(n), память O(n).",
    "public_tests": [
     {
      "args": [
@@ -378888,7 +378888,7 @@
    "starter": "def solve(text: str):\n    pass\n",
    "language": "python3.12",
    "time_limit_minutes": 10,
-   "complexity_hint": "Скользящее окно и позиция последнего вхождения символа.",
+   "complexity_hint": "Время O(n), память O(min(n, |Σ|)).",
    "public_tests": [
     {
      "args": [
@@ -383774,7 +383774,7 @@
    "starter": "def solve(nums: list[int]):\n    pass\n",
    "language": "python3.12",
    "time_limit_minutes": 10,
-   "complexity_hint": "O(n log n) через массив минимальных хвостов.",
+   "complexity_hint": "Время O(n log n), память O(n).",
    "public_tests": [
     {
      "args": [

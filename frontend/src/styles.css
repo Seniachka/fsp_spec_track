@@ -52,6 +52,7 @@ h1, h2, h3, .brand, .bib, .money {
 .who { color: var(--muted); font-size: 14px; }
 
 .page { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 36px 0 72px; }
+.page:has(.exam-shell) { width: min(1560px, calc(100% - 40px)); }
 .steps { display: flex; gap: 8px; flex-wrap: wrap; }
 .steps a {
   text-decoration: none;
@@ -176,18 +177,33 @@ textarea { min-height: 140px; font-family: ui-monospace, Consolas, monospace; }
 .demo-table td { padding: 8px 0; border-top: 1px solid var(--line); vertical-align: top; }
 .status { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
 
-.exam-start { max-width: 680px; }
-.exam-shell { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: start; }
-.exam-side { position: sticky; top: 88px; }
+.page:has(> .exam-start) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 74px);
+  padding-top: 24px;
+  padding-bottom: 24px;
+}
+.exam-start { width: min(680px, 100%); }
+.account-row { display: flex; gap: 12px; align-items: flex-end; }
+.account-row .field { flex: 1; }
+.fsp-link { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.fsp-link input { width: auto; flex: 1; min-width: 180px; }
+.exam-shell { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.exam-shell > * { min-width: 0; }
+.exam-side { position: sticky; top: 88px; overflow: hidden; }
 .timer-digits { font-family: Unbounded, sans-serif; font-size: 42px; letter-spacing: -0.04em; line-height: 1; }
 .timer-digits.warn { color: var(--red); }
 .timer-split { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 13px; }
-.q-map { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; }
-.q-map .q-num { width: 100%; height: 28px; border-radius: 8px; font-size: 11px; }
+.q-map { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 6px; }
+.q-map .q-num { width: 100%; min-width: 0; height: auto; aspect-ratio: 1; border-radius: 8px; font-size: 12px; padding: 0; }
 .task-link {
   display: flex;
   gap: 10px;
   align-items: center;
+  width: 100%;
+  min-width: 0;
   text-align: left;
   border: 1px solid var(--line);
   background: white;
@@ -195,6 +211,8 @@ textarea { min-height: 140px; font-family: ui-monospace, Consolas, monospace; }
   padding: 8px 10px;
   cursor: pointer;
 }
+.task-link b { flex: 0 0 auto; }
+.task-link span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .task-link.current { outline: 2px solid var(--ink); }
 .task-link.answered { background: #c4bdb3; }
 .task-link.ok { background: var(--ok); color: white; border-color: var(--ok); }

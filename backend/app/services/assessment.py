@@ -296,6 +296,17 @@ def _theory_params(rng: random.Random, item: dict) -> dict:
     }
 
 
+def _complexity_label(hint: str | None) -> str | None:
+    if not hint:
+        return None
+    rewritten = {
+        "Один проход с множеством увиденных чисел — O(n).": "Время O(n), память O(n).",
+        "O(n log n) через массив минимальных хвостов.": "Время O(n log n), память O(n).",
+        "Скользящее окно и позиция последнего вхождения символа.": "Время O(n), память O(min(n, |Σ|)).",
+    }
+    return rewritten.get(hint, hint)
+
+
 def _practice_params(task: dict) -> dict:
     return {
         "section": "practice",
@@ -314,7 +325,7 @@ def _practice_params(task: dict) -> dict:
         "starter": task.get("starter"),
         "public_tests": task.get("public_tests") or [],
         "hidden": task.get("hidden_tests") or [],
-        "complexity_hint": task.get("complexity_hint"),
+        "complexity_hint": _complexity_label(task.get("complexity_hint")),
     }
 
 
@@ -442,7 +453,7 @@ def public_session(db: Session, session: AssessmentSession) -> dict:
             entry["source"] = saved.get("source") if saved.get("source") is not None else params.get("starter")
             entry["public_tests"] = params.get("public_tests") or []
             entry["hidden_count"] = len(params.get("hidden") or [])
-            entry["complexity_hint"] = params.get("complexity_hint")
+            entry["complexity_hint"] = _complexity_label(params.get("complexity_hint"))
         if finished:
             entry["correct"] = item.correct
             entry["points"] = saved.get("points")
