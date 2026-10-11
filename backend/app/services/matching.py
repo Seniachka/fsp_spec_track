@@ -121,6 +121,7 @@ def explain_candidate(db: Session, profile: CandidateProfile, need: Need | None,
     fsp_score = fsp_norm(achievements)
     test_score = profile.test_score or 0
     person_strength = strength(test_score, fsp_score, prefer_fsp)
+    fresh = freshness(profile)
     lines = []
     if spec and grade:
         lines.append(f"Категория совпала: {spec.title} · {grade.title}")
@@ -147,15 +148,30 @@ def explain_candidate(db: Session, profile: CandidateProfile, need: Need | None,
             profile.desired_salary_min, profile.desired_salary_max, need.salary_min, need.salary_max
         )
         lines.append(salary_text)
-    fit = 0.50 * (person_strength / 100) + 0.35 * stack_overlap + 0.15 * salary_factor
-    fit *= freshness(profile)
+    fit = round((0.50 * (person_strength / 100) + 0.35 * stack_overlap + 0.15 * salary_factor) * fresh, 4)
+    category_ok = spec is not None and grade is not None
     return {
-        "fit": round(fit, 4),
-        "strength": round(person_strength * freshness(profile), 2),
+        "fit": fit,
+        "strength": round(person_strength * fresh, 2),
         "fsp_score": round(fsp_score, 2),
         "has_fsp": bool(achievements),
         "lines": lines[:5],
         "stack": [{"code": tag.code, "title": tag.title} for tag in tags],
+        "rating": {
+            "fit": round(fit * 100),
+            "test": round(test_score),
+            "stack": round(stack_overlap * 100),
+            "fsp": round(fsp_score),
+            "conditions": round(salary_factor * 100),
+            "freshness": fresh,
+            "reasons": [
+                {"code": "category", "title": "Категория", "ok": category_ok},
+                {"code": "stack", "title": "Стек", "ok": stack_overlap >= 1},
+                {"code": "test", "title": "Тест", "ok": profile.test_score is not None},
+                {"code": "fsp", "title": "ФСП", "ok": bool(achievements)},
+                {"code": "conditions", "title": "Условия", "ok": salary_factor > 0},
+            ],
+        },
     }
 
 

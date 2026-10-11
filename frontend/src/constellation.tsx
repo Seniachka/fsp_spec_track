@@ -13,9 +13,9 @@ const LINK = 148;
 function tone(x: number, width: number) {
   const t = width <= 0 ? 0.5 : Math.min(1, Math.max(0, x / width));
   return {
-    r: 148 + (36 - 148) * t,
-    g: 72 + (132 - 72) * t,
-    b: 176 + (168 - 176) * t,
+    r: 108 + (18 - 108) * t,
+    g: 38 + (92 - 38) * t,
+    b: 132 + (124 - 132) * t,
   };
 }
 
@@ -39,7 +39,7 @@ export function Constellation() {
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const count = Math.round(Math.min(96, Math.max(36, (w * h) / 24000)));
+      const count = Math.round(Math.min(130, Math.max(48, (w * h) / 17500)));
       nodes = Array.from({ length: count }, () => ({
         x: Math.random() * w,
         y: Math.random() * h,
@@ -65,7 +65,7 @@ export function Constellation() {
           if (dist > reach) continue;
           const fade = 1 - Math.sqrt(dist) / LINK;
           const c = tone((a.x + b.x) / 2, w);
-          ctx.strokeStyle = `rgba(${c.r | 0}, ${c.g | 0}, ${c.b | 0}, ${(0.22 * fade).toFixed(3)})`;
+          ctx.strokeStyle = `rgba(${c.r | 0}, ${c.g | 0}, ${c.b | 0}, ${(0.32 * fade).toFixed(3)})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
@@ -77,7 +77,7 @@ export function Constellation() {
       for (const n of nodes) {
         const c = tone(n.x, w);
         ctx.beginPath();
-        ctx.fillStyle = `rgba(${c.r | 0}, ${c.g | 0}, ${c.b | 0}, 0.72)`;
+        ctx.fillStyle = `rgba(${c.r | 0}, ${c.g | 0}, ${c.b | 0}, 0.9)`;
         ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
         ctx.fill();
       }

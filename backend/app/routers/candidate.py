@@ -11,6 +11,7 @@ from app.models import (
     AssessmentSessionItem,
     CandidateProfile,
     Company,
+    Grade,
     Consent,
     Experience,
     FspAchievement,
@@ -360,9 +361,25 @@ def decline(invitation_id: int, user: User = Depends(require_role("candidate")),
     return {"status": row.status}
 
 
+def _fits_vacancy_grade(db: Session, profile: CandidateProfile, vacancy: Vacancy) -> bool:
+    mine = db.get(Grade, profile.grade_id) if profile.grade_id else None
+    theirs = db.get(Grade, vacancy.grade_id)
+    return mine is not None and theirs is not None and theirs.rank <= mine.rank
+
+
 @router.get("/vacancies")
 def vacancies(user: User = Depends(require_role("candidate")), db: Session = Depends(get_db)):
-    rows = db.query(Vacancy).filter(Vacancy.is_published.is_(True)).order_by(Vacancy.id.desc()).all()
+    profile = _profile(user)
+    mine = db.get(Grade, profile.grade_id) if profile.grade_id else None
+    if mine is None:
+        return []
+    rows = (
+        db.query(Vacancy)
+        .join(Grade, Vacancy.grade_id == Grade.id)
+        .filter(Vacancy.is_published.is_(True), Grade.rank <= mine.rank)
+        .order_by(Vacancy.id.desc())
+        .all()
+    )
     result = []
     for row in rows:
         company = db.get(Company, row.company_id)
@@ -392,7 +409,7 @@ def apply(vacancy_id: int, user: User = Depends(require_role("candidate")), db: 
     if profile.grade_id is None:
         raise ApiError(422, "NOT_CATEGORIZED", "Сначала подтвердите категорию тестом")
     vacancy = db.get(Vacancy, vacancy_id)
-    if vacancy is None or not vacancy.is_published:
+    if vacancy is None or not vacancy.is_published or not _fits_vacancy_grade(db, profile, vacancy):
         raise ApiError(404, "NOT_FOUND", "Вакансия не найдена")
     exists = db.query(Application).filter(Application.vacancy_id == vacancy.id, Application.candidate_id == user.id).first()
     if exists:

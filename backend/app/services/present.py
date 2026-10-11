@@ -46,6 +46,7 @@ def public_candidate(
     rank: int | None = None,
     fit: float | None = None,
     explanation: list[str] | None = None,
+    rating: dict | None = None,
 ) -> dict:
     spec = db.get(Specialization, profile.specialization_id) if profile.specialization_id else None
     grade = db.get(Grade, profile.grade_id) if profile.grade_id else None
@@ -89,6 +90,7 @@ def public_candidate(
         "soft_skills": [item.label for item in soft],
         "rank": rank,
         "fit": fit,
+        "rating": rating,
         "explanation": explanation or [],
         "contacts_locked": not opened,
     }

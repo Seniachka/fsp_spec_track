@@ -46,6 +46,12 @@ def test_shortlist_hides_contacts_and_keeps_empty_fsp(client):
     assert igor["fsp_empty"] is True
     assert igor["contacts_locked"] is True
     assert igor["explanation"]
+    fits = [row["fit"] for row in rows]
+    assert fits == sorted(fits, reverse=True)
+    assert igor["rating"]["fit"] == round(igor["fit"] * 100)
+    assert {item["code"] for item in igor["rating"]["reasons"]} == {"category", "stack", "test", "fsp", "conditions"}
+    assert next(item for item in igor["rating"]["reasons"] if item["code"] == "fsp")["ok"] is False
+    assert rows[0]["rating"]["fit"] >= rows[-1]["rating"]["fit"]
     only_fsp = client.get(f"/api/v1/needs/{need['id']}/shortlist?fsp_only=true", headers=auth(token)).json()
     assert all(not row["fsp_empty"] for row in only_fsp)
     assert all(row["first_name"] != "Игорь" for row in only_fsp)
@@ -151,6 +157,31 @@ def test_code_runner_scores_hidden_tests():
     ]
     assert run_hidden_tests(source, "python", hidden) == [True, True, True]
     assert run_hidden_tests("def solve(nums, threshold):\n    return 0\n", "python", hidden)[0] is False
+
+
+def test_vacancies_show_own_grade_and_below(client):
+    junior = login(client, "maria@example.com")
+    junior_rows = client.get("/api/v1/vacancies", headers=auth(junior)).json()
+    junior_titles = [row["title"] for row in junior_rows]
+    assert all("Senior" not in title and "Middle" not in title for title in junior_titles)
+
+    middle = login(client, "igor@example.com")
+    middle_rows = client.get("/api/v1/vacancies", headers=auth(middle)).json()
+    middle_titles = [row["title"] for row in middle_rows]
+    assert any("Middle" in title for title in middle_titles)
+    assert all("Senior" not in title for title in middle_titles)
+
+    senior = login(client, "roman@example.com")
+    senior_titles = [row["title"] for row in client.get("/api/v1/vacancies", headers=auth(senior)).json()]
+    assert any("Senior" in title for title in senior_titles)
+    assert any("Middle" in title for title in senior_titles)
+
+    ungraded = login(client, "anna@example.com")
+    assert client.get("/api/v1/vacancies", headers=auth(ungraded)).json() == []
+    hidden = next(row for row in senior_titles if "Senior" in row)
+    senior_id = next(row["id"] for row in client.get("/api/v1/vacancies", headers=auth(senior)).json() if row["title"] == hidden)
+    denied = client.post(f"/api/v1/vacancies/{senior_id}/applications", headers=auth(middle))
+    assert denied.status_code == 404
 
 
 def test_register_requires_consents(client):

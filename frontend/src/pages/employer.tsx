@@ -13,21 +13,67 @@ type Spec = { code: string; title: string };
 type Grade = { code: string; title: string; rank: number };
 type Tag = { code: string; title: string };
 
+const BARS = [
+  { key: "test", label: "Результат теста", tone: "test" },
+  { key: "stack", label: "Совпадение стека", tone: "stack" },
+  { key: "fsp", label: "Достижения ФСП", tone: "fsp" },
+  { key: "fit", label: "Соответствие потребности", tone: "fit" },
+] as const;
+
+function RatingPanel({ rating }: { rating: any }) {
+  return (
+    <div className="rating">
+      <div className="rating-bars">
+        {BARS.map((bar) => {
+          const value = Math.max(0, Math.min(100, Number(rating[bar.key]) || 0));
+          return (
+            <div className="rate-row" key={bar.key}>
+              <span>{bar.label}</span>
+              <span className="rate-track"><span className={`rate-fill ${bar.tone}`} style={{ width: `${value}%` }} /></span>
+              <b>{value}%</b>
+            </div>
+          );
+        })}
+        {rating.freshness < 1 && <p className="muted rate-note">Тест старше 90 дней, соответствие умножено на 0,85</p>}
+      </div>
+      <aside className="rating-why">
+        <p>Почему в топе</p>
+        <ul>
+          {(rating.reasons || []).map((reason: any) => (
+            <li key={reason.code} className={reason.ok ? "on" : "off"}>
+              {reason.ok ? "✓" : "–"} {reason.title}
+            </li>
+          ))}
+        </ul>
+      </aside>
+    </div>
+  );
+}
+
 function Person({ row, onInvite, invited }: { row: any; onInvite?: (row: any) => void; invited?: boolean }) {
   return (
     <article className="person">
-      <div className="place">{String(row.rank || "–").padStart(2, "0")}</div>
-      <div className="person-body">
-        <h3>{row.first_name} {row.last_name}</h3>
-        <p className="muted">{row.specialization?.title} · {row.grade?.title} · тест {row.test_score == null ? "—" : Math.round(row.test_score)}</p>
-        <div className="chips">{row.stack?.map((tag: any) => <span className="chip" key={tag.code}>{tag.title}</span>)}</div>
-        {!row.fsp_empty && row.fsp?.slice(0, 2).map((item: any) => (
-          <p key={item.competition} className="muted">{item.place ? `${item.place} место` : "Участие"} · {item.discipline} · {item.level}</p>
-        ))}
-        {!row.contacts_locked && <p className="ok">{row.email} · {row.telegram}</p>}
+      <div className="person-head">
+        <div className="place">{String(row.rank || "–").padStart(2, "0")}</div>
+        <div className="person-body">
+          <h3>{row.first_name} {row.last_name}</h3>
+          <p className="muted">{row.specialization?.title} · {row.grade?.title}</p>
+        </div>
+        {row.rating && (
+          <div className="fit-num">
+            {row.rating.fit}%
+            <span>подходит</span>
+          </div>
+        )}
+        {onInvite && <button className="btn-red" onClick={() => onInvite(row)}>Пригласить</button>}
+        {invited && <p className="ok person-mark">Отправлено</p>}
       </div>
-      {onInvite && <button className="btn-red" onClick={() => onInvite(row)}>Пригласить</button>}
-      {invited && <p className="ok">Отправлено</p>}
+      {row.rating && <RatingPanel rating={row.rating} />}
+      <div className="chips">{row.stack?.map((tag: any) => <span className="chip" key={tag.code}>{tag.title}</span>)}</div>
+      {!row.fsp_empty && row.fsp?.slice(0, 2).map((item: any) => (
+        <p key={item.competition} className="muted">{item.place ? `${item.place} место` : "Участие"} · {item.discipline} · {item.level}</p>
+      ))}
+      {!row.contacts_locked && <p className="ok">{row.email} · {row.telegram}</p>}
     </article>
   );
 }
@@ -219,11 +265,12 @@ export function ShortlistPage() {
   const [smax, setSmax] = useState("");
   const [tags, setTags] = useState<Tag[]>([]);
   const [stack, setStack] = useState<string[]>([]);
+  const [fspOnly, setFspOnly] = useState(false);
 
-  async function load() {
+  async function load(only = fspOnly) {
     const [needRow, people] = await Promise.all([
       api(`/needs/${id}`),
-      api(`/needs/${id}/shortlist`),
+      api(`/needs/${id}/shortlist${only ? "?fsp_only=true" : ""}`),
     ]);
     setNeed(needRow);
     setRows(people);
@@ -270,7 +317,7 @@ export function ShortlistPage() {
       setNeed(updated);
       setConfirm(false);
       setEditing(false);
-      setRows(await api(`/needs/${id}/shortlist`));
+      setRows(await api(`/needs/${id}/shortlist${fspOnly ? "?fsp_only=true" : ""}`));
     } catch (err) {
       setConfirm(false);
       setError(err instanceof Error ? err.message : "Ошибка");
@@ -330,12 +377,28 @@ export function ShortlistPage() {
         </form>
       )}
       {error && <p className="banner">{error}</p>}
-      <h2>Кандидаты</h2>
+      <div className="vac-head">
+        <h2>Кандидаты</h2>
+        <label className="consent">
+          <input
+            type="checkbox"
+            checked={fspOnly}
+            onChange={(event) => {
+              const next = event.target.checked;
+              setFspOnly(next);
+              api(`/needs/${id}/shortlist${next ? "?fsp_only=true" : ""}`).then(setRows).catch((err) => setError(err.message));
+            }}
+          />
+          Только с достижениями ФСП
+        </label>
+      </div>
+      <p className="muted">Список отсортирован по соответствию потребности: насколько человек подходит этой вакансии. Полоски показывают, из чего сложился процент.</p>
       <div className="people">
         {rows.map((row) => (
           <Person key={row.id} row={row} invited={invited.includes(row.id)} onInvite={invited.includes(row.id) ? undefined : invite} />
         ))}
       </div>
+      <p className="muted">Факторы видны в карточке кандидата. Фильтр «только с достижениями ФСП» можно включить и выключить.</p>
       {confirm && (
         <div className="confirm-backdrop" onClick={() => setConfirm(false)}>
           <form className="card confirm-dialog stack" onClick={(event) => event.stopPropagation()} onSubmit={save}>

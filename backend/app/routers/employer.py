@@ -250,6 +250,7 @@ def _shortlist_payload(db: Session, company: Company, need: Need, grade: str | N
             rank=row["rank"],
             fit=row["fit"],
             explanation=row["lines"],
+            rating=row["rating"],
         )
         for row in ranked
     ]
@@ -294,7 +295,15 @@ def search(
     codes = [item for item in (stack or "").split(",") if item]
     rows = search_bank(db, specialization_code=specialization, grade_code=grade, stack_codes=codes or None, fsp_only=fsp_only)
     return [
-        public_candidate(db, row["profile"], company_id=company.id, rank=row["rank"], fit=row["fit"], explanation=row["lines"])
+        public_candidate(
+            db,
+            row["profile"],
+            company_id=company.id,
+            rank=row["rank"],
+            fit=row["fit"],
+            explanation=row["lines"],
+            rating=row["rating"],
+        )
         for row in rows
     ]
 

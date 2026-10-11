@@ -66,7 +66,7 @@ export function CandidateInvites() {
     <section className="stack">
       <h2>Приглашения</h2>
       {error && <p className="banner">{error}</p>}
-      {rows.length === 0 && <p className="card">Пока никто не написал. Категория уже видна работодателям, если тест сдан.</p>}
+      {rows.length === 0 && <p className="card">Пока никто не написал. Анкета уже видна работодателям, если тест сдан.</p>}
       {rows.map((row) => (
         <article className="card stack" key={row.id}>
           <p className="status">{STATUS[row.status] || row.status}</p>
@@ -100,7 +100,7 @@ export function VacanciesPage() {
   return (
     <section className="stack">
       <h2>Открытые вакансии</h2>
-      <p className="muted">Это запасной ход. Основной — приглашение работодателя.</p>
+      <p className="muted">Это запасной ход. Основной — приглашение работодателя. Видны вакансии вашего грейда и ниже.</p>
       {error && <p className="banner">{error}</p>}
       {rows.map((row) => (
         <article className="card stack" key={row.id}>
