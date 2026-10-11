@@ -1,13 +1,9 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api, saveSession } from "../api";
 import { useAuth } from "../auth";
 
 export function Landing() {
-  const [stats, setStats] = useState<{ candidates: number; categories: { title: string; count: number }[]; bank_items: number } | null>(null);
-  useEffect(() => {
-    api("/public/stats").then(setStats).catch(() => undefined);
-  }, []);
   return (
     <div className="stack">
       <section className="hero">
@@ -21,29 +17,7 @@ export function Landing() {
             <Link className="btn-ghost" to="/register">Регистрация</Link>
           </div>
         </div>
-        <aside className="card">
-          <p className="eyebrow">Учебные входы</p>
-          <table className="demo-table">
-            <tbody>
-              <tr><td>Анна, с историей ФСП</td><td>anna@example.com</td></tr>
-              <tr><td>Игорь, истории ФСП нет</td><td>igor@example.com</td></tr>
-              <tr><td>Марина, работодатель</td><td>marina@example.com</td></tr>
-              <tr><td>Пароль</td><td>demo1234</td></tr>
-            </tbody>
-          </table>
-          {stats && <p className="muted">В банке {stats.candidates} категоризированных профилей и {stats.bank_items} заданий.</p>}
-        </aside>
       </section>
-      {stats && (
-        <section className="card">
-          <h2>Категории на стенде</h2>
-          <div className="chips" style={{ marginTop: 14 }}>
-            {stats.categories.slice(0, 8).map((item) => (
-              <span className="chip" key={item.title}>{item.title} · {item.count}</span>
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }

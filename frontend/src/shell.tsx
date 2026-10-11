@@ -16,7 +16,7 @@ export function Shell() {
           {user && links.map(([to, label]) => (
             <NavLink key={to} to={to} end={to === "/e"}>{label}</NavLink>
           ))}
-          <NavLink to="/skills" className="nav-public">Навыки и задания</NavLink>
+          {user && <NavLink to="/skills">Навыки и задания</NavLink>}
         </nav>
         {user && (
           <div className="spacer">

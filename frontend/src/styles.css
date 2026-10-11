@@ -267,7 +267,6 @@ textarea { min-height: 140px; font-family: ui-monospace, Consolas, monospace; }
 .cm-editor { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
 
 /* каталог навыков и банк заданий */
-.nav a.nav-public { border: 1px solid var(--line); }
 .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
 .tab {
   border: 1px solid var(--line);
