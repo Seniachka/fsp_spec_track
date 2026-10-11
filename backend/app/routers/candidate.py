@@ -27,17 +27,25 @@ from app.services.present import candidate_self, replace_stack
 router = APIRouter(tags=["candidate"])
 
 
+class ExperienceIn(BaseModel):
+    role_title: str = ""
+    company_name: str = ""
+    start_year: str = ""
+    end_year: str = ""
+    is_current: bool = False
+
+
 class ProfileIn(BaseModel):
-    first_name: str = ""
-    last_name: str = ""
-    about: str = ""
-    phone: str = ""
-    telegram: str = ""
-    stack: list[str] = []
-    soft_skills: list[str] = []
+    first_name: str | None = None
+    last_name: str | None = None
+    about: str | None = None
+    phone: str | None = None
+    telegram: str | None = None
+    stack: list[str] | None = None
+    soft_skills: list[str] | None = None
     desired_salary_min: int | None = None
     desired_salary_max: int | None = None
-    experiences: list[dict] = []
+    experiences: list[ExperienceIn] | None = None
 
 
 class PrivacyIn(BaseModel):
@@ -92,38 +100,51 @@ def get_me(user: User = Depends(require_role("candidate")), db: Session = Depend
 @router.patch("/me")
 def patch_me(body: ProfileIn, user: User = Depends(require_role("candidate")), db: Session = Depends(get_db)):
     profile = _profile(user)
-    if body.desired_salary_min is not None and body.desired_salary_max is not None:
-        if body.desired_salary_min > body.desired_salary_max:
+    sent = body.model_fields_set
+    if "first_name" in sent:
+        profile.first_name = (body.first_name or "").strip()
+    if "last_name" in sent:
+        profile.last_name = (body.last_name or "").strip()
+    if "about" in sent:
+        profile.about = (body.about or "").strip()
+    if "phone" in sent:
+        profile.phone = (body.phone or "").strip()
+    if "telegram" in sent:
+        profile.telegram = (body.telegram or "").strip()
+    if "desired_salary_min" in sent or "desired_salary_max" in sent:
+        low = body.desired_salary_min if "desired_salary_min" in sent else profile.desired_salary_min
+        high = body.desired_salary_max if "desired_salary_max" in sent else profile.desired_salary_max
+        if low is not None and high is not None and low > high:
             raise ApiError(422, "SALARY_REQUIRED", "Вилка ожиданий: «от» не больше «до»")
-    profile.first_name = body.first_name.strip()
-    profile.last_name = body.last_name.strip()
-    profile.about = body.about.strip()
-    profile.phone = body.phone.strip()
-    profile.telegram = body.telegram.strip()
-    profile.desired_salary_min = body.desired_salary_min
-    profile.desired_salary_max = body.desired_salary_max
-    replace_stack(db, profile.user_id, body.stack)
-    db.query(SoftSkill).filter(SoftSkill.candidate_id == profile.user_id).delete()
-    for label in body.soft_skills:
-        cleaned = label.strip()
-        if cleaned:
-            db.add(SoftSkill(candidate_id=profile.user_id, label=cleaned[:80]))
-    db.query(Experience).filter(Experience.candidate_id == profile.user_id).delete()
-    for item in body.experiences:
-        title = str(item.get("role_title") or "").strip()
-        company = str(item.get("company_name") or "").strip()
-        if not title and not company:
-            continue
-        db.add(
-            Experience(
-                candidate_id=profile.user_id,
-                role_title=title or "Роль",
-                company_name=company or "Компания",
-                start_year=str(item.get("start_year") or ""),
-                end_year=str(item.get("end_year") or ""),
-                is_current=bool(item.get("is_current")),
+        if "desired_salary_min" in sent:
+            profile.desired_salary_min = body.desired_salary_min
+        if "desired_salary_max" in sent:
+            profile.desired_salary_max = body.desired_salary_max
+    if "stack" in sent:
+        replace_stack(db, profile.user_id, body.stack or [])
+    if "soft_skills" in sent:
+        db.query(SoftSkill).filter(SoftSkill.candidate_id == profile.user_id).delete()
+        for label in body.soft_skills or []:
+            cleaned = label.strip()
+            if cleaned:
+                db.add(SoftSkill(candidate_id=profile.user_id, label=cleaned[:80]))
+    if "experiences" in sent:
+        db.query(Experience).filter(Experience.candidate_id == profile.user_id).delete()
+        for item in body.experiences or []:
+            title = item.role_title.strip()
+            company = item.company_name.strip()
+            if not title and not company:
+                continue
+            db.add(
+                Experience(
+                    candidate_id=profile.user_id,
+                    role_title=title or "Роль",
+                    company_name=company or "Компания",
+                    start_year=item.start_year.strip(),
+                    end_year="" if item.is_current else item.end_year.strip(),
+                    is_current=item.is_current,
+                )
             )
-        )
     db.commit()
     return candidate_self(db, profile, user)
 

@@ -1,6 +1,8 @@
 """Идемпотентный учебный набор. Повторный запуск не плодит дубликаты."""
 
+import json
 from datetime import timedelta
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
@@ -165,9 +167,51 @@ def refresh_code_bank(db: Session) -> None:
     db.commit()
 
 
+def _skill_map_path() -> Path | None:
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        candidate = parent / "data" / "skill_map.json"
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def refresh_stack_catalog(db: Session) -> None:
+    """Дописывает стек из актуальной карты навыков. Старые теги не удаляет."""
+    path = _skill_map_path()
+    specs = {row.code: row for row in db.query(Specialization).all()}
+    if path is None or not specs:
+        return
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    existing = {(tag.specialization_id, tag.code): tag for tag in db.query(StackTag).all()}
+    for skill in payload.get("skills", []):
+        code = str(skill.get("code") or "").strip()
+        title = str(skill.get("title") or code).strip()[:64]
+        if not code:
+            continue
+        spec_codes: list[str] = []
+        for position in skill.get("exam_positions") or []:
+            spec_code = str(position).split("/", 1)[0]
+            if spec_code in specs and spec_code not in spec_codes:
+                spec_codes.append(spec_code)
+        if not spec_codes:
+            spec_codes = [next(iter(specs))]
+        for spec_code in spec_codes:
+            spec = specs[spec_code]
+            current = existing.get((spec.id, code))
+            if current is None:
+                row = StackTag(specialization_id=spec.id, code=code, title=title)
+                db.add(row)
+                existing[(spec.id, code)] = row
+            elif current.title != title:
+                current.title = title
+    db.commit()
+
+
 def seed(db: Session) -> None:
     if db.query(User).filter(User.email == "marina@example.com").first():
         refresh_code_bank(db)
+        refresh_stack_catalog(db)
         return
     password_hash = hash_password("demo1234")
     specs = {}
@@ -337,3 +381,4 @@ def seed(db: Session) -> None:
     db.add(admin)
     db.commit()
     refresh_code_bank(db)
+    refresh_stack_catalog(db)

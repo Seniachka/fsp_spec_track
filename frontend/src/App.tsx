@@ -1,7 +1,8 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Guard, HomeRedirect, Shell } from "./shell";
 import { AuthPage, Landing } from "./pages/public";
-import { CandidateHome, CandidateInvites, ProfilePage, SettingsPage, TestPage, VacanciesPage } from "./pages/candidate";
+import { CandidateHome, CandidateInvites, SettingsPage, TestPage, VacanciesPage } from "./pages/candidate";
+import { ProfileExperience, ProfileLayout, ProfilePersonal, ProfileSkills } from "./pages/profile";
 import { CompanyPage, EmployerHome, EmployerInvites, NeedForm, SearchPage, ShortlistPage } from "./pages/employer";
 import { SkillsPage } from "./pages/skills";
 
@@ -17,7 +18,11 @@ export function App() {
           <Route path="/c" element={<CandidateHome />} />
           <Route path="/c/test" element={<TestPage />} />
           <Route path="/c/invitations" element={<CandidateInvites />} />
-          <Route path="/c/profile" element={<ProfilePage />} />
+          <Route path="/c/profile" element={<ProfileLayout />}>
+            <Route index element={<ProfilePersonal />} />
+            <Route path="experience" element={<ProfileExperience />} />
+            <Route path="skills" element={<ProfileSkills />} />
+          </Route>
           <Route path="/c/settings" element={<SettingsPage />} />
           <Route path="/c/vacancies" element={<VacanciesPage />} />
         </Route>
