@@ -100,7 +100,6 @@ export function VacanciesPage() {
   return (
     <section className="stack">
       <h2>Открытые вакансии</h2>
-      <p className="muted">Это запасной ход. Основной — приглашение работодателя. Видны вакансии вашего грейда и ниже.</p>
       {error && <p className="banner">{error}</p>}
       {rows.map((row) => (
         <article className="card stack" key={row.id}>

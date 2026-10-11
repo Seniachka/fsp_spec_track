@@ -174,6 +174,12 @@ textarea { min-height: 120px; }
   border-radius: 22px;
   box-shadow: var(--shadow);
 }
+.person:has(.person-mark) {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 20px;
+}
+.person-main { display: grid; gap: 12px; min-width: 0; }
 .person-head {
   display: grid;
   grid-template-columns: 64px minmax(0, 1fr) auto auto;
@@ -182,8 +188,8 @@ textarea { min-height: 120px; }
 }
 .person-body { min-width: 0; }
 .person h3 { font-size: 20px; }
-.person .btn-red,
-.person-mark { align-self: center; margin: 0; }
+.person .btn-red { align-self: center; }
+.person-mark { margin: 0; white-space: nowrap; }
 .place { font-family: Unbounded, sans-serif; font-size: 28px; }
 .fit-num {
   font-family: Unbounded, sans-serif;

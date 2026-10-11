@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { api, range } from "../api";
+import { ApiError, api, range } from "../api";
 
 const STATUS: Record<string, string> = {
   sent: "отправлено",
@@ -53,27 +53,29 @@ function RatingPanel({ rating }: { rating: any }) {
 function Person({ row, onInvite, invited }: { row: any; onInvite?: (row: any) => void; invited?: boolean }) {
   return (
     <article className="person">
-      <div className="person-head">
-        <div className="place">{String(row.rank || "–").padStart(2, "0")}</div>
-        <div className="person-body">
-          <h3>{row.first_name} {row.last_name}</h3>
-          <p className="muted">{row.specialization?.title} · {row.grade?.title}</p>
-        </div>
-        {row.rating && (
-          <div className="fit-num">
-            {row.rating.fit}%
-            <span>подходит</span>
+      <div className="person-main">
+        <div className="person-head">
+          <div className="place">{String(row.rank || "–").padStart(2, "0")}</div>
+          <div className="person-body">
+            <h3>{row.first_name} {row.last_name}</h3>
+            <p className="muted">{row.specialization?.title} · {row.grade?.title}</p>
           </div>
-        )}
-        {onInvite && <button className="btn-red" onClick={() => onInvite(row)}>Пригласить</button>}
-        {invited && <p className="ok person-mark">Отправлено</p>}
+          {row.rating && (
+            <div className="fit-num">
+              {row.rating.fit}%
+              <span>подходит</span>
+            </div>
+          )}
+          {onInvite && <button className="btn-red" onClick={() => onInvite(row)}>Пригласить</button>}
+        </div>
+        {row.rating && <RatingPanel rating={row.rating} />}
+        <div className="chips">{row.stack?.map((tag: any) => <span className="chip" key={tag.code}>{tag.title}</span>)}</div>
+        {!row.fsp_empty && row.fsp?.slice(0, 2).map((item: any) => (
+          <p key={item.competition} className="muted">{item.place ? `${item.place} место` : "Участие"} · {item.discipline} · {item.level}</p>
+        ))}
+        {!row.contacts_locked && <p className="ok">{row.email} · {row.telegram}</p>}
       </div>
-      {row.rating && <RatingPanel rating={row.rating} />}
-      <div className="chips">{row.stack?.map((tag: any) => <span className="chip" key={tag.code}>{tag.title}</span>)}</div>
-      {!row.fsp_empty && row.fsp?.slice(0, 2).map((item: any) => (
-        <p key={item.competition} className="muted">{item.place ? `${item.place} место` : "Участие"} · {item.discipline} · {item.level}</p>
-      ))}
-      {!row.contacts_locked && <p className="ok">{row.email} · {row.telegram}</p>}
+      {invited && <p className="ok person-mark">Отправлено</p>}
     </article>
   );
 }
@@ -268,12 +270,21 @@ export function ShortlistPage() {
   const [fspOnly, setFspOnly] = useState(false);
 
   async function load(only = fspOnly) {
-    const [needRow, people] = await Promise.all([
+    const [needRow, people, invites] = await Promise.all([
       api(`/needs/${id}`),
       api(`/needs/${id}/shortlist${only ? "?fsp_only=true" : ""}`),
+      api<any[]>("/invitations"),
     ]);
     setNeed(needRow);
     setRows(people);
+    const needId = Number(id);
+    setInvited([
+      ...new Set(
+        invites
+          .filter((item) => item.need_id === needId && item.candidate?.id != null)
+          .map((item) => item.candidate.id as number),
+      ),
+    ]);
     setSpec(needRow.specialization_code || "");
     setGrade(needRow.grade_min || "");
     setDescription(needRow.team_description || "");
@@ -291,8 +302,12 @@ export function ShortlistPage() {
     setError("");
     try {
       await api("/invitations", "POST", { candidate_id: row.id, need_id: Number(id) });
-      setInvited((current) => [...current, row.id]);
+      setInvited((current) => (current.includes(row.id) ? current : [...current, row.id]));
     } catch (err) {
+      if (err instanceof ApiError && err.code === "INVITE_EXISTS") {
+        setInvited((current) => (current.includes(row.id) ? current : [...current, row.id]));
+        return;
+      }
       setError(err instanceof Error ? err.message : "Ошибка");
     }
   }

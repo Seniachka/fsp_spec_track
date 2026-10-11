@@ -39,7 +39,7 @@ export function Constellation() {
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const count = Math.round(Math.min(130, Math.max(48, (w * h) / 17500)));
+      const count = Math.round(Math.min(390, Math.max(144, (w * h) / 5800)));
       nodes = Array.from({ length: count }, () => ({
         x: Math.random() * w,
         y: Math.random() * h,
