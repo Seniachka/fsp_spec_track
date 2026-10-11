@@ -149,12 +149,20 @@ def test_failed_test_does_not_assign_grade_and_form_stays_comparable(client):
     assert retry.status_code == 201, retry.text
 
 
-def test_demo_profiles_skip_grade_cooldown(client):
+def test_grade_change_waits_90_days_after_pass(client):
     token = login(client, "igor@example.com")
     me = client.get("/api/v1/me", headers=auth(token)).json()
-    assert me["policy"]["cooldown_active"] is False
-    assert me["policy"]["next_attempt_at"] is None
-    assert me["policy"]["can_start_up"] is True
+    assert me["policy"]["cooldown_active"] is True
+    assert me["policy"]["can_start_up"] is False
+    assert me["policy"]["can_start_down"] is False
+    assert me["policy"]["grade_change_allowed_at"]
+    denied = client.post(
+        "/api/v1/assessments/sessions",
+        headers=auth(token),
+        json={"specialization_code": "backend", "claimed_grade": "senior", "purpose": "up"},
+    )
+    assert denied.status_code == 409
+    assert denied.json()["error"]["code"] == "GRADE_COOLDOWN"
 
 
 def test_validation_thresholds(client):

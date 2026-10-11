@@ -107,9 +107,7 @@ def policy(db: Session, profile: CandidateProfile) -> dict:
     now = utcnow()
     sealed = profile.grade_id is not None
     demo = _demo_candidate(db, profile)
-    cooldown = bool(
-        not demo and sealed and profile.grade_change_allowed_at and profile.grade_change_allowed_at > now
-    )
+    cooldown = bool(sealed and profile.grade_change_allowed_at and profile.grade_change_allowed_at > now)
     last = latest_session(db, profile.user_id)
     last_grade = db.get(Grade, last.claimed_grade_id) if last else None
     failed_recently = False
@@ -362,7 +360,7 @@ def assemble(db: Session, profile: CandidateProfile, spec_code: str, grade_code:
             raise ApiError(
                 409,
                 "GRADE_COOLDOWN",
-                "Смена грейда пока закрыта",
+                "Смена грейда закрыта на 90 дней после прохождения",
                 {"grade_change_allowed_at": rules["grade_change_allowed_at"]},
             )
         raise ApiError(409, "GRADE_COOLDOWN", "Эта попытка сейчас недоступна")
@@ -505,8 +503,7 @@ def _seal(profile: CandidateProfile, grade: Grade, score: float, spec_id: int) -
     profile.test_score = score
     profile.test_scored_at = now
     profile.grade_sealed_at = now
-    email = profile.user.email if profile.user is not None else ""
-    profile.grade_change_allowed_at = None if email.endswith("@example.com") else now + timedelta(days=90)
+    profile.grade_change_allowed_at = now + timedelta(days=90)
     profile.pending_grade_id = None
     profile.pending_score = None
     profile.initial_failed_at = None

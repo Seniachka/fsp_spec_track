@@ -209,8 +209,11 @@ def unlink_fsp(user: User = Depends(require_role("candidate")), db: Session = De
 
 @router.post("/me/grade/confirm")
 def confirm(user: User = Depends(require_role("candidate")), db: Session = Depends(get_db)):
-    confirm_pending(db, _profile(user))
-    return candidate_self(db, _profile(user), user)
+    profile = _profile(user)
+    confirm_pending(db, profile)
+    payload = candidate_self(db, profile, user)
+    payload["policy"] = policy(db, profile)
+    return payload
 
 
 @router.post("/me/grade/intern")

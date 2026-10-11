@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api, range } from "../api";
+import { api, formatDateTime, range } from "../api";
 
 const STATUS: Record<string, string> = {
   sent: "отправлено",
@@ -28,6 +28,12 @@ export function CandidateHome() {
         <p>{me.about}</p>
         {me.test_score != null && <p>Тест: <b>{Math.round(me.test_score)}</b> из 100</p>}
         {!me.grade && <Link className="btn-red" to="/c/test">Пройти тест</Link>}
+        {me.grade && me.policy?.cooldown_active && (
+          <p className="muted">Смена грейда будет доступна {formatDateTime(me.policy.grade_change_allowed_at)}.</p>
+        )}
+        {me.grade && !me.policy?.cooldown_active && (me.policy?.can_start_up || me.policy?.can_start_down) && (
+          <Link className="btn" to="/c/test">Сменить грейд</Link>
+        )}
         {me.policy?.can_confirm_pending && <p className="ok">Есть сильный результат. Его можно оставить или попробовать грейд выше.</p>}
         <div className="chips">{me.stack?.map((tag: any) => <span className="chip" key={tag.code}>{tag.title}</span>)}</div>
       </section>

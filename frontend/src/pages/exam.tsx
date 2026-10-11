@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../api";
+import { api, formatDateTime } from "../api";
 import { CodePad } from "../CodePad";
 
 const GRADES = [
@@ -53,16 +53,15 @@ function pad(value: number) {
 }
 
 function nextAttemptMessage(iso?: string | null) {
-  if (!iso) return "Новая попытка сейчас недоступна.";
-  const normalized = /[zZ]|[+-]\d{2}:\d{2}$/.test(iso) ? iso : `${iso}Z`;
-  const formatted = new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(normalized));
+  const formatted = formatDateTime(iso);
+  if (!formatted) return "Новая попытка сейчас недоступна.";
   return `Новая попытка будет доступна ${formatted}.`;
+}
+
+function gradeChangeMessage(iso?: string | null) {
+  const formatted = formatDateTime(iso);
+  if (!formatted) return "Смена грейда закрыта на 90 дней после прохождения.";
+  return `Смена грейда будет доступна ${formatted}.`;
 }
 
 function formatClock(total: number) {
@@ -103,7 +102,9 @@ export function TestPage() {
     api("/catalog/specializations").then(setSpecs).catch(() => undefined);
     api("/me").then((profile) => {
       const rules = profile.policy || {};
-      if (rules.can_start_down && !rules.can_start_initial) setPurpose("down");
+      if (rules.cooldown_active) {
+        setBlocked(gradeChangeMessage(rules.grade_change_allowed_at || rules.next_attempt_at));
+      } else if (rules.can_start_down && !rules.can_start_initial) setPurpose("down");
       else if (rules.can_start_up && !rules.can_start_initial) setPurpose("up");
       else if (!rules.can_start_initial && !rules.can_start_down && !rules.can_start_up) {
         setBlocked(nextAttemptMessage(rules.next_attempt_at || rules.grade_change_allowed_at));
@@ -321,8 +322,12 @@ export function TestPage() {
             </div>
             <p>{result.outcome === "fail" ? "Заявленный грейд не подтверждён." : "Результат записан."}</p>
             {result.policy?.can_confirm_pending && <p className="ok">Балл высокий. Можно оставить этот грейд или попробовать выше.</p>}
+            {result.policy?.cooldown_active && <p className="muted">{gradeChangeMessage(result.policy.grade_change_allowed_at)}</p>}
             <div className="actions">
-              {result.policy?.can_confirm_pending && <button className="btn" onClick={async () => { await api("/me/grade/confirm", "POST"); setResult({ ...result, policy: { ...result.policy, can_confirm_pending: false } }); }}>Оставить этот грейд</button>}
+              {result.policy?.can_confirm_pending && <button className="btn" onClick={async () => {
+                const confirmed = await api("/me/grade/confirm", "POST");
+                setResult({ ...result, policy: confirmed.policy || { ...result.policy, can_confirm_pending: false, cooldown_active: true } });
+              }}>Оставить этот грейд</button>}
               <Link className="btn-red" to="/c">К категории</Link>
             </div>
           </section>

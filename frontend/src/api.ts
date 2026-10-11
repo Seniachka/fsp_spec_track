@@ -66,3 +66,15 @@ export function money(value: number | null | undefined) {
 export function range(min: number, max: number) {
   return `${money(min)} — ${money(max)}`;
 }
+
+export function formatDateTime(iso?: string | null) {
+  if (!iso) return "";
+  const normalized = /[zZ]|[+-]\d{2}:\d{2}$/.test(iso) ? iso : `${iso}Z`;
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(normalized));
+}
