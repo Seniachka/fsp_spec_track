@@ -5,7 +5,7 @@ export function Shell() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const links = user?.role === "employer"
-    ? [["/e", "Потребности"], ["/e/search", "Банк"], ["/e/invitations", "Приглашения"], ["/e/company", "Компания"]]
+    ? [["/e", "Вакансии"], ["/e/invitations", "Отклики"], ["/e/company", "Компания"]]
     : [["/c/invitations", "Приглашения"], ["/c/vacancies", "Вакансии"], ["/c/profile", "Профиль"]];
   const brandTo = user?.role === "candidate" ? "/c" : user?.role === "employer" ? "/e" : "/";
   return (
@@ -16,7 +16,7 @@ export function Shell() {
           {user && links.map(([to, label]) => (
             <NavLink key={to} to={to} end={to === "/e"}>{label}</NavLink>
           ))}
-          {user && <NavLink to="/skills">Навыки и задания</NavLink>}
+          {user && user.role !== "employer" && <NavLink to="/skills">Навыки и задания</NavLink>}
         </nav>
         {user && (
           <div className="spacer">

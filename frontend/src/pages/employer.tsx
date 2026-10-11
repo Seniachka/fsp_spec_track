@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, range } from "../api";
 
 const STATUS: Record<string, string> = {
@@ -9,24 +9,89 @@ const STATUS: Record<string, string> = {
   declined: "отклонено",
 };
 
+type Spec = { code: string; title: string };
+type Grade = { code: string; title: string; rank: number };
+type Tag = { code: string; title: string };
+
 function Person({ row, onInvite }: { row: any; onInvite?: (row: any) => void }) {
   return (
-    <article className="rank">
+    <article className="person">
       <div className="place">{String(row.rank || "–").padStart(2, "0")}</div>
-      <div>
+      <div className="person-body">
         <h3>{row.first_name} {row.last_name}</h3>
-        <p>{row.specialization?.title} · {row.grade?.title} · тест {row.test_score == null ? "—" : Math.round(row.test_score)}</p>
+        <p className="muted">{row.specialization?.title} · {row.grade?.title} · тест {row.test_score == null ? "—" : Math.round(row.test_score)}</p>
         <div className="chips">{row.stack?.map((tag: any) => <span className="chip" key={tag.code}>{tag.title}</span>)}</div>
-        <ul className="explain">{row.explanation?.map((line: string) => <li key={line}>{line}</li>)}</ul>
-        {row.fsp_empty && <p>Истории ФСП нет, человек остаётся в подборке.</p>}
         {!row.fsp_empty && row.fsp?.slice(0, 2).map((item: any) => (
           <p key={item.competition} className="muted">{item.place ? `${item.place} место` : "Участие"} · {item.discipline} · {item.level}</p>
         ))}
-        {row.contacts_locked ? <p className="muted">Контакты откроются после принятия приглашения или отклика.</p> : <p className="ok">{row.email} · {row.telegram}</p>}
+        {!row.contacts_locked && <p className="ok">{row.email} · {row.telegram}</p>}
       </div>
-      <div>{onInvite && <button className="btn-red" onClick={() => onInvite(row)}>Пригласить</button>}</div>
+      {onInvite && <button className="btn-red" onClick={() => onInvite(row)}>Пригласить</button>}
     </article>
   );
+}
+
+function SkillPicker({ tags, value, onChange }: { tags: Tag[]; value: string[]; onChange: (next: string[]) => void }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const options = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return tags
+      .filter((tag) => !value.includes(tag.code))
+      .filter((tag) => !needle || tag.title.toLowerCase().includes(needle) || tag.code.includes(needle))
+      .slice(0, 8);
+  }, [tags, value, query]);
+
+  function add(code: string) {
+    if (value.length >= 5 || value.includes(code)) return;
+    onChange([...value, code]);
+    setQuery("");
+    setOpen(false);
+  }
+
+  return (
+    <div className="skill-pick">
+      <label className="field">
+        <span>Навыки</span>
+        <input
+          value={query}
+          disabled={value.length >= 5}
+          placeholder="Поиск"
+          onFocus={() => setOpen(true)}
+          onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+          onChange={(event) => { setQuery(event.target.value); setOpen(true); }}
+        />
+      </label>
+      {open && options.length > 0 && (
+        <div className="skill-menu">
+          {options.map((tag) => (
+            <button key={tag.code} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => add(tag.code)}>
+              {tag.title}
+            </button>
+          ))}
+        </div>
+      )}
+      {value.length > 0 && (
+        <div className="chips">
+          {value.map((code) => (
+            <button key={code} type="button" className="chip chip-x" onClick={() => onChange(value.filter((item) => item !== code))}>
+              {tags.find((tag) => tag.code === code)?.title || code}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function useCatalog() {
+  const [specs, setSpecs] = useState<Spec[]>([]);
+  const [grades, setGrades] = useState<Grade[]>([]);
+  useEffect(() => {
+    api<Spec[]>("/catalog/specializations").then(setSpecs);
+    api<Grade[]>("/catalog/grades").then(setGrades);
+  }, []);
+  return { specs, grades };
 }
 
 export function EmployerHome() {
@@ -34,91 +99,146 @@ export function EmployerHome() {
   useEffect(() => { api("/needs").then(setNeeds); }, []);
   return (
     <section className="stack">
-      <div className="actions">
-        <h2>Потребности</h2>
-        <Link className="btn-red" to="/e/needs/new">Новая потребность</Link>
+      <div className="vac-head">
+        <h2>Вакансии</h2>
+        <Link className="btn-red" to="/e/new">Новая вакансия</Link>
       </div>
-      {needs.map((need) => (
-        <Link className="card" key={need.id} to={`/e/needs/${need.id}`}>
-          <h3>{need.title}</h3>
-          <p>{need.specialization_title} · {need.grade_min}</p>
-          <p className="money">{range(need.salary_min, need.salary_max)}</p>
-        </Link>
-      ))}
+      <div className="vac-grid">
+        {needs.map((need) => (
+          <Link className="card vac-card" key={need.id} to={`/e/v/${need.id}`}>
+            <div className="vac-top">
+              <span className="lvl">{need.grade_title}</span>
+              {need.applications > 0 && <span className="status">Отклики · {need.applications}</span>}
+            </div>
+            <h3>{need.specialization_title}</h3>
+            <p className="vac-text">{need.team_description}</p>
+            <div className="chips">{need.stack?.map((tag: Tag) => <span className="chip" key={tag.code}>{tag.title}</span>)}</div>
+            <p className="vac-pay">{range(need.salary_min, need.salary_max)}</p>
+          </Link>
+        ))}
+      </div>
     </section>
   );
 }
 
 export function NeedForm() {
-  const [specs, setSpecs] = useState<any[]>([]);
-  const [tags, setTags] = useState<any[]>([]);
-  const [spec, setSpec] = useState("backend");
+  const navigate = useNavigate();
+  const { specs, grades } = useCatalog();
+  const [spec, setSpec] = useState("");
+  const [grade, setGrade] = useState("");
+  const [description, setDescription] = useState("");
+  const [smin, setSmin] = useState("");
+  const [smax, setSmax] = useState("");
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [stack, setStack] = useState<string[]>([]);
   const [error, setError] = useState("");
-  useEffect(() => { api("/catalog/specializations").then(setSpecs); }, []);
-  useEffect(() => { api(`/catalog/stack-tags?specialization=${spec}`).then(setTags); }, [spec]);
+
+  useEffect(() => {
+    if (!spec && specs[0]) setSpec(specs[0].code);
+  }, [specs, spec]);
+  useEffect(() => {
+    if (!grade && grades[0]) setGrade(grades.find((item) => item.code === "middle")?.code || grades[0].code);
+  }, [grades, grade]);
+  useEffect(() => {
+    if (!spec) return;
+    api<Tag[]>(`/catalog/stack-tags?specialization=${spec}`).then((rows) => {
+      setTags(rows);
+      setStack((current) => current.filter((code) => rows.some((tag) => tag.code === code)));
+    });
+  }, [spec]);
+
   async function submit(event: FormEvent) {
     event.preventDefault();
-    const form = new FormData(event.target as HTMLFormElement);
-    const stack = tags.filter((tag) => form.get(`tag-${tag.code}`)).map((tag) => tag.code);
+    const specTitle = specs.find((item) => item.code === spec)?.title || spec;
+    const gradeTitle = grades.find((item) => item.code === grade)?.title || grade;
+    setError("");
     try {
       const need = await api("/needs", "POST", {
-        title: form.get("title"),
-        team_description: form.get("team"),
+        title: `${specTitle} · ${gradeTitle}`,
+        team_description: description,
         specialization_code: spec,
-        grade_min: form.get("gmin"),
-        grade_max: form.get("gmax"),
-        salary_min: Number(form.get("smin")),
-        salary_max: Number(form.get("smax")),
+        grade_min: grade,
+        grade_max: grade,
+        salary_min: Number(smin),
+        salary_max: Number(smax),
         stack,
-        prefer_fsp: Boolean(form.get("fsp")),
       });
-      location.assign(`/e/needs/${need.id}`);
+      navigate(`/e/v/${need.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ошибка");
     }
   }
+
   return (
-    <form className="card stack" onSubmit={submit}>
-      <h2>Кого ищете</h2>
+    <form className="card vac-form stack" onSubmit={submit}>
+      <h2>Новая вакансия</h2>
       {error && <p className="banner">{error}</p>}
-      <label className="field"><span>Название</span><input name="title" required defaultValue="Middle Backend на Go" /></label>
-      <label className="field"><span>Команда</span><textarea name="team" defaultValue="Платежи и внутренние API." /></label>
-      <label className="field"><span>Специализация</span>
-        <select value={spec} onChange={(e) => setSpec(e.target.value)}>{specs.map((item) => <option key={item.code} value={item.code}>{item.title}</option>)}</select>
+      <div className="grid-2">
+        <label className="field">
+          <span>Должность</span>
+          <select value={spec} onChange={(event) => setSpec(event.target.value)}>
+            {specs.map((item) => <option key={item.code} value={item.code}>{item.title}</option>)}
+          </select>
+        </label>
+        <label className="field">
+          <span>Грейд</span>
+          <select value={grade} onChange={(event) => setGrade(event.target.value)}>
+            {grades.map((item) => <option key={item.code} value={item.code}>{item.title}</option>)}
+          </select>
+        </label>
+      </div>
+      <label className="field">
+        <span>Описание</span>
+        <textarea value={description} onChange={(event) => setDescription(event.target.value)} required />
       </label>
       <div className="grid-2">
-        <label className="field"><span>Грейд от</span><select name="gmin" defaultValue="middle"><option>junior</option><option>middle</option><option>senior</option></select></label>
-        <label className="field"><span>Грейд до</span><select name="gmax" defaultValue="middle"><option>junior</option><option>middle</option><option>senior</option></select></label>
+        <label className="field"><span>Вилка от, ₽</span><input value={smin} onChange={(event) => setSmin(event.target.value)} type="number" min={0} required /></label>
+        <label className="field"><span>Вилка до, ₽</span><input value={smax} onChange={(event) => setSmax(event.target.value)} type="number" min={0} required /></label>
       </div>
-      <div className="grid-2">
-        <label className="field"><span>Вилка от, ₽</span><input name="smin" type="number" required defaultValue={200000} /></label>
-        <label className="field"><span>Вилка до, ₽</span><input name="smax" type="number" required defaultValue={280000} /></label>
-      </div>
-      <div className="checks">{tags.map((tag) => <label key={tag.code}><input type="checkbox" name={`tag-${tag.code}`} defaultChecked={tag.code === "go" || tag.code === "postgres"} />{tag.title}</label>)}</div>
-      <label><input type="checkbox" name="fsp" /> Сначала участники ФСП</label>
-      <button className="btn-red">Собрать подборку</button>
+      <SkillPicker tags={tags} value={stack} onChange={setStack} />
+      <button className="btn-red">Опубликовать</button>
     </form>
   );
 }
 
 export function ShortlistPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { specs, grades } = useCatalog();
   const [need, setNeed] = useState<any>(null);
   const [rows, setRows] = useState<any[]>([]);
-  const [fspOnly, setFspOnly] = useState(false);
   const [target, setTarget] = useState<any>(null);
   const [error, setError] = useState("");
   const [sent, setSent] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [confirm, setConfirm] = useState(false);
+  const [spec, setSpec] = useState("");
+  const [grade, setGrade] = useState("");
+  const [description, setDescription] = useState("");
+  const [smin, setSmin] = useState("");
+  const [smax, setSmax] = useState("");
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [stack, setStack] = useState<string[]>([]);
 
-  async function load(only = fspOnly) {
+  async function load() {
     const [needRow, people] = await Promise.all([
       api(`/needs/${id}`),
-      api(`/needs/${id}/shortlist?fsp_only=${only}`),
+      api(`/needs/${id}/shortlist`),
     ]);
     setNeed(needRow);
     setRows(people);
+    setSpec(needRow.specialization_code || "");
+    setGrade(needRow.grade_min || "");
+    setDescription(needRow.team_description || "");
+    setSmin(String(needRow.salary_min ?? ""));
+    setSmax(String(needRow.salary_max ?? ""));
+    setStack((needRow.stack || []).map((tag: Tag) => tag.code));
   }
   useEffect(() => { load().catch((err) => setError(err.message)); }, [id]);
+  useEffect(() => {
+    if (!spec) return;
+    api<Tag[]>(`/catalog/stack-tags?specialization=${spec}`).then(setTags);
+  }, [spec]);
 
   async function invite(event: FormEvent) {
     event.preventDefault();
@@ -133,65 +253,124 @@ export function ShortlistPage() {
         salary_max: Number(form.get("smax")),
         contact_channel: form.get("channel"),
       });
-      setSent(`${target.first_name} получит вилку до того, как откроет контакт.`);
+      setSent(`${target.first_name} ${target.last_name}`);
       setTarget(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ошибка");
     }
   }
 
+  async function save(event: FormEvent) {
+    event.preventDefault();
+    const specTitle = specs.find((item) => item.code === spec)?.title || spec;
+    const gradeTitle = grades.find((item) => item.code === grade)?.title || grade;
+    setError("");
+    try {
+      const updated = await api(`/needs/${id}`, "PATCH", {
+        title: `${specTitle} · ${gradeTitle}`,
+        team_description: description,
+        specialization_code: spec,
+        grade_min: grade,
+        grade_max: grade,
+        salary_min: Number(smin),
+        salary_max: Number(smax),
+        stack,
+        prefer_fsp: Boolean(need?.prefer_fsp),
+      });
+      setNeed(updated);
+      setConfirm(false);
+      setEditing(false);
+      setRows(await api(`/needs/${id}/shortlist`));
+    } catch (err) {
+      setConfirm(false);
+      setError(err instanceof Error ? err.message : "Ошибка");
+    }
+  }
+
   return (
     <section className="stack">
-      {need && (
-        <div>
-          <p className="eyebrow">Подборка</p>
-          <h2>{need.title}</h2>
-          <p className="money">{range(need.salary_min, need.salary_max)}</p>
-          <p>{need.team_description}</p>
-        </div>
+      <button className="btn-ghost back" type="button" onClick={() => navigate("/e")}>Вакансии</button>
+      {need && !editing && (
+        <article className="card vac-hero">
+          <div className="stack">
+            <div className="vac-top">
+              <span className="lvl">{need.grade_title}</span>
+              {need.applications > 0 && <span className="status">Отклики · {need.applications}</span>}
+            </div>
+            <h2>{need.specialization_title}</h2>
+            <p>{need.team_description}</p>
+            <div className="chips">{need.stack?.map((tag: Tag) => <span className="chip" key={tag.code}>{tag.title}</span>)}</div>
+          </div>
+          <div className="vac-side">
+            <p className="vac-pay">{range(need.salary_min, need.salary_max)}</p>
+            {need.editable && <button className="btn" type="button" onClick={() => setEditing(true)}>Изменить</button>}
+          </div>
+        </article>
       )}
-      <label><input type="checkbox" checked={fspOnly} onChange={(e) => { setFspOnly(e.target.checked); load(e.target.checked); }} /> Только с достижениями ФСП</label>
+      {need && editing && (
+        <form className="card vac-form stack" onSubmit={(event) => { event.preventDefault(); setConfirm(true); }}>
+          <h2>Вакансия</h2>
+          <div className="grid-2">
+            <label className="field">
+              <span>Должность</span>
+              <select value={spec} onChange={(event) => { setSpec(event.target.value); setStack([]); }}>
+                {specs.map((item) => <option key={item.code} value={item.code}>{item.title}</option>)}
+              </select>
+            </label>
+            <label className="field">
+              <span>Грейд</span>
+              <select value={grade} onChange={(event) => setGrade(event.target.value)}>
+                {grades.map((item) => <option key={item.code} value={item.code}>{item.title}</option>)}
+              </select>
+            </label>
+          </div>
+          <label className="field">
+            <span>Описание</span>
+            <textarea value={description} onChange={(event) => setDescription(event.target.value)} required />
+          </label>
+          <div className="grid-2">
+            <label className="field"><span>Вилка от, ₽</span><input value={smin} onChange={(event) => setSmin(event.target.value)} type="number" min={0} required /></label>
+            <label className="field"><span>Вилка до, ₽</span><input value={smax} onChange={(event) => setSmax(event.target.value)} type="number" min={0} required /></label>
+          </div>
+          <SkillPicker tags={tags} value={stack} onChange={setStack} />
+          <div className="actions">
+            <button className="btn-ghost" type="button" onClick={() => setEditing(false)}>Отмена</button>
+            <button className="btn-red" type="submit">Сохранить</button>
+          </div>
+        </form>
+      )}
       {error && <p className="banner">{error}</p>}
       {sent && <p className="ok">{sent}</p>}
       {target && (
         <form className="card stack" onSubmit={invite}>
-          <h3>Приглашение для {target.first_name} {target.last_name}</h3>
-          <label className="field"><span>Текст</span><textarea name="body" required defaultValue="Нужен человек в платёжный контур. Команда небольшая, задачи доходят до продакшена." /></label>
+          <h3>{target.first_name} {target.last_name}</h3>
+          <label className="field"><span>Текст</span><textarea name="body" required /></label>
           <div className="grid-2">
-            <label className="field"><span>Вилка от</span><input name="smin" type="number" required defaultValue={need?.salary_min || 220000} /></label>
-            <label className="field"><span>Вилка до</span><input name="smax" type="number" required defaultValue={need?.salary_max || 260000} /></label>
+            <label className="field"><span>Вилка от</span><input name="smin" type="number" required defaultValue={need?.salary_min || ""} /></label>
+            <label className="field"><span>Вилка до</span><input name="smax" type="number" required defaultValue={need?.salary_max || ""} /></label>
           </div>
-          <label className="field"><span>Как с вами связаться</span><input name="channel" required defaultValue="@marina_demo" /></label>
-          <button className="btn-red">Отправить приглашение</button>
+          <label className="field"><span>Контакт</span><input name="channel" required /></label>
+          <div className="actions">
+            <button className="btn-ghost" type="button" onClick={() => setTarget(null)}>Отмена</button>
+            <button className="btn-red">Отправить</button>
+          </div>
         </form>
       )}
-      <div className="card">
+      <h2>Кандидаты</h2>
+      <div className="people">
         {rows.map((row) => <Person key={row.id} row={row} onInvite={setTarget} />)}
-        {rows.length === 0 && <p>В этой категории пока никого нет.</p>}
       </div>
-    </section>
-  );
-}
-
-export function SearchPage() {
-  const [specs, setSpecs] = useState<any[]>([]);
-  const [spec, setSpec] = useState("backend");
-  const [grade, setGrade] = useState("middle");
-  const [fspOnly, setFspOnly] = useState(false);
-  const [rows, setRows] = useState<any[]>([]);
-  useEffect(() => { api("/catalog/specializations").then(setSpecs); }, []);
-  useEffect(() => {
-    api(`/candidates/search?specialization=${spec}&grade=${grade}&fsp_only=${fspOnly}`).then(setRows);
-  }, [spec, grade, fspOnly]);
-  return (
-    <section className="stack">
-      <h2>Банк кандидатов</h2>
-      <div className="grid-2">
-        <select value={spec} onChange={(e) => setSpec(e.target.value)}>{specs.map((item) => <option key={item.code} value={item.code}>{item.title}</option>)}</select>
-        <select value={grade} onChange={(e) => setGrade(e.target.value)}><option>junior</option><option>middle</option><option>senior</option></select>
-      </div>
-      <label><input type="checkbox" checked={fspOnly} onChange={(e) => setFspOnly(e.target.checked)} /> Только с достижениями ФСП</label>
-      <div className="card">{rows.map((row) => <Person key={row.id} row={row} />)}</div>
+      {confirm && (
+        <div className="confirm-backdrop" onClick={() => setConfirm(false)}>
+          <form className="card confirm-dialog stack" onClick={(event) => event.stopPropagation()} onSubmit={save}>
+            <h3>Сохранить изменения?</h3>
+            <div className="actions">
+              <button className="btn-ghost" type="button" onClick={() => setConfirm(false)}>Отмена</button>
+              <button className="btn-red">Сохранить</button>
+            </div>
+          </form>
+        </div>
+      )}
     </section>
   );
 }
@@ -201,29 +380,26 @@ export function EmployerInvites() {
   useEffect(() => { api("/invitations").then(setRows); }, []);
   return (
     <section className="stack">
-      <h2>Исходящие приглашения</h2>
-      {rows.length === 0 && <p>Пока пусто.</p>}
-      {rows.map((row) => (
-        <article className="card" key={row.id}>
-          <p className="status">{STATUS[row.status] || row.status}</p>
-          <h3>{row.candidate?.first_name} {row.candidate?.last_name}</h3>
-          <p className="money">{range(row.salary_min, row.salary_max)}</p>
-          <p>{row.body}</p>
-          {row.candidate?.contacts_locked ? <p className="muted">Контакт ещё закрыт.</p> : <p className="ok">{row.candidate?.email} · {row.candidate?.telegram}</p>}
-        </article>
-      ))}
+      <h2>Отклики</h2>
+      <div className="vac-grid">
+        {rows.map((row) => (
+          <article className="card vac-card" key={row.id}>
+            <p className="status">{STATUS[row.status] || row.status}</p>
+            <h3>{row.candidate?.first_name} {row.candidate?.last_name}</h3>
+            <p className="vac-pay">{range(row.salary_min, row.salary_max)}</p>
+            <p className="vac-text">{row.body}</p>
+            {!row.candidate?.contacts_locked && <p className="ok">{row.candidate?.email} · {row.candidate?.telegram}</p>}
+          </article>
+        ))}
+      </div>
     </section>
   );
 }
 
 export function CompanyPage() {
   const [company, setCompany] = useState<any>(null);
-  const [vacancies, setVacancies] = useState<any[]>([]);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    api("/company").then(setCompany);
-    api("/company/vacancies").then(setVacancies);
-  }, []);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => { api("/company").then(setCompany); }, []);
   if (!company) return <p>Загрузка…</p>;
   async function save(event: FormEvent) {
     event.preventDefault();
@@ -234,49 +410,17 @@ export function CompanyPage() {
       contact_email: form.get("email"),
       about: form.get("about"),
     }));
-  }
-  async function publish(event: FormEvent) {
-    event.preventDefault();
-    setError("");
-    const form = new FormData(event.target as HTMLFormElement);
-    try {
-      await api("/vacancies", "POST", {
-        title: form.get("title"),
-        description: form.get("description"),
-        specialization_code: "backend",
-        grade: "middle",
-        salary_min: Number(form.get("smin")),
-        salary_max: Number(form.get("smax")),
-      });
-      setVacancies(await api("/company/vacancies"));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка");
-    }
+    setSaved(true);
   }
   return (
-    <div className="grid-2">
-      <form className="card stack" onSubmit={save}>
-        <h2>Компания</h2>
-        <label className="field"><span>Название</span><input name="name" defaultValue={company.name} /></label>
-        <label className="field"><span>Направление</span><input name="industry" defaultValue={company.industry} /></label>
-        <label className="field"><span>Почта</span><input name="email" defaultValue={company.contact_email} /></label>
-        <label className="field"><span>О компании</span><textarea name="about" defaultValue={company.about} /></label>
-        <button className="btn">Сохранить</button>
-      </form>
-      <div className="stack">
-        <form className="card stack" onSubmit={publish}>
-          <h2>Открытая вакансия</h2>
-          {error && <p className="banner">{error}</p>}
-          <label className="field"><span>Название</span><input name="title" required defaultValue="Backend-разработчик" /></label>
-          <label className="field"><span>Описание</span><textarea name="description" defaultValue="Запасной контур для тех, кому ещё не написали." /></label>
-          <div className="grid-2">
-            <label className="field"><span>От</span><input name="smin" type="number" required defaultValue={220000} /></label>
-            <label className="field"><span>До</span><input name="smax" type="number" required defaultValue={270000} /></label>
-          </div>
-          <button className="btn-red">Опубликовать</button>
-        </form>
-        {vacancies.map((row) => <article className="card" key={row.id}><h3>{row.title}</h3><p>{range(row.salary_min, row.salary_max)}</p></article>)}
-      </div>
-    </div>
+    <form className="card vac-form stack" onSubmit={save}>
+      <h2>Компания</h2>
+      {saved && <p className="ok">Сохранено</p>}
+      <label className="field"><span>Название</span><input name="name" defaultValue={company.name} /></label>
+      <label className="field"><span>Направление</span><input name="industry" defaultValue={company.industry} /></label>
+      <label className="field"><span>Почта</span><input name="email" defaultValue={company.contact_email} /></label>
+      <label className="field"><span>О компании</span><textarea name="about" defaultValue={company.about} /></label>
+      <button className="btn-red">Сохранить</button>
+    </form>
   );
 }

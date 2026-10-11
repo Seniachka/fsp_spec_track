@@ -1,11 +1,16 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { Guard, HomeRedirect, Shell } from "./shell";
 import { AuthPage, Landing } from "./pages/public";
 import { CandidateHome, CandidateInvites, VacanciesPage } from "./pages/candidate";
 import { TestPage } from "./pages/exam";
 import { ProfileExperience, ProfileLayout, ProfilePersonal, ProfileSkills } from "./pages/profile";
-import { CompanyPage, EmployerHome, EmployerInvites, NeedForm, SearchPage, ShortlistPage } from "./pages/employer";
+import { CompanyPage, EmployerHome, EmployerInvites, NeedForm, ShortlistPage } from "./pages/employer";
 import { SkillsPage } from "./pages/skills";
+
+function NeedRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/e/v/${id}`} replace />;
+}
 
 export function App() {
   return (
@@ -29,9 +34,11 @@ export function App() {
         </Route>
         <Route element={<Guard role="employer" />}>
           <Route path="/e" element={<EmployerHome />} />
-          <Route path="/e/needs/new" element={<NeedForm />} />
-          <Route path="/e/needs/:id" element={<ShortlistPage />} />
-          <Route path="/e/search" element={<SearchPage />} />
+          <Route path="/e/new" element={<NeedForm />} />
+          <Route path="/e/v/:id" element={<ShortlistPage />} />
+          <Route path="/e/needs/new" element={<Navigate to="/e/new" replace />} />
+          <Route path="/e/needs/:id" element={<NeedRedirect />} />
+          <Route path="/e/search" element={<Navigate to="/e" replace />} />
           <Route path="/e/invitations" element={<EmployerInvites />} />
           <Route path="/e/company" element={<CompanyPage />} />
         </Route>

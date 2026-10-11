@@ -382,3 +382,26 @@ def seed(db: Session) -> None:
     db.commit()
     refresh_code_bank(db)
     refresh_stack_catalog(db)
+
+
+def link_need_vacancies(db: Session) -> None:
+    """Публичная вакансия для каждой потребности, чтобы отклики и карточка были одним объектом."""
+    for need in db.query(Need).all():
+        row = db.query(Vacancy).filter(Vacancy.need_id == need.id).one_or_none()
+        if row is None:
+            row = Vacancy(
+                company_id=need.company_id,
+                need_id=need.id,
+                is_published=True,
+                title=need.title,
+                description=need.team_description,
+                specialization_id=need.specialization_id,
+                grade_id=need.grade_min_id,
+                salary_min=need.salary_min,
+                salary_max=need.salary_max,
+            )
+            db.add(row)
+        else:
+            row.is_published = True
+    db.query(Vacancy).filter(Vacancy.need_id.is_(None)).update({Vacancy.is_published: False})
+    db.commit()

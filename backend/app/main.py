@@ -5,7 +5,7 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -13,7 +13,7 @@ from app.db import Base, SessionLocal, engine, get_db
 from app.deps import require_role
 from app.errors import ApiError
 from app.routers import auth, bank, candidate, catalog, employer
-from app.seed import seed
+from app.seed import link_need_vacancies, seed
 from app.services.validation import matching_report
 
 
@@ -31,15 +31,28 @@ def init_db() -> dict | None:
     if last_error is not None:
         raise last_error
     Base.metadata.create_all(bind=engine)
+    _ensure_vacancy_need_link()
     report = None
     if settings.seed:
         db = SessionLocal()
         try:
             seed(db)
+            link_need_vacancies(db)
             report = matching_report(db)
         finally:
             db.close()
     return report
+
+
+def _ensure_vacancy_need_link() -> None:
+    inspector = inspect(engine)
+    if not inspector.has_table("vacancies"):
+        return
+    names = {column["name"] for column in inspector.get_columns("vacancies")}
+    if "need_id" in names:
+        return
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE vacancies ADD COLUMN need_id INTEGER"))
 
 
 @asynccontextmanager

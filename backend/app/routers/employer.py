@@ -28,7 +28,7 @@ class NeedIn(BaseModel):
     grade_max: str
     salary_min: int | None = None
     salary_max: int | None = None
-    stack: list[str] = []
+    stack: list[str] = Field(default_factory=list, max_length=5)
     prefer_fsp: bool = False
 
 
@@ -108,6 +108,13 @@ def list_needs(user: User = Depends(require_role("employer")), db: Session = Dep
     return [_need_out(db, row) for row in rows]
 
 
+def _application_count(db: Session, need_id: int) -> int:
+    vacancy = db.query(Vacancy).filter(Vacancy.need_id == need_id).one_or_none()
+    if vacancy is None:
+        return 0
+    return db.query(Application).filter(Application.vacancy_id == vacancy.id).count()
+
+
 def _need_out(db: Session, need: Need) -> dict:
     spec = db.get(Specialization, need.specialization_id)
     gmin = db.get(Grade, need.grade_min_id)
@@ -118,6 +125,7 @@ def _need_out(db: Session, need: Need) -> dict:
         .filter(NeedStack.need_id == need.id)
         .all()
     )
+    applications = _application_count(db, need.id)
     return {
         "id": need.id,
         "title": need.title,
@@ -126,12 +134,42 @@ def _need_out(db: Session, need: Need) -> dict:
         "specialization_title": spec.title if spec else None,
         "grade_min": gmin.code if gmin else None,
         "grade_max": gmax.code if gmax else None,
+        "grade_title": gmin.title if gmin else None,
         "salary_min": need.salary_min,
         "salary_max": need.salary_max,
         "prefer_fsp": need.prefer_fsp,
         "demo_code": need.demo_code,
+        "applications": applications,
+        "editable": applications == 0,
         "stack": [{"code": tag.code, "title": tag.title} for tag in tags],
     }
+
+
+def _write_stack(db: Session, need: Need, spec_id: int, codes: list[str]) -> None:
+    db.query(NeedStack).filter(NeedStack.need_id == need.id).delete()
+    if not codes:
+        return
+    found = db.query(StackTag).filter(StackTag.code.in_(codes), StackTag.specialization_id == spec_id).all()
+    seen = set()
+    for tag in found:
+        if tag.code in seen:
+            continue
+        seen.add(tag.code)
+        db.add(NeedStack(need_id=need.id, tag_id=tag.id, is_required=True))
+
+
+def _publish_vacancy(db: Session, need: Need, grade_id: int) -> None:
+    row = db.query(Vacancy).filter(Vacancy.need_id == need.id).one_or_none()
+    if row is None:
+        row = Vacancy(company_id=need.company_id, need_id=need.id, is_published=True)
+        db.add(row)
+    row.title = need.title
+    row.description = need.team_description
+    row.specialization_id = need.specialization_id
+    row.grade_id = grade_id
+    row.salary_min = need.salary_min
+    row.salary_max = need.salary_max
+    row.is_published = True
 
 
 @router.post("/needs", status_code=201)
@@ -156,10 +194,33 @@ def create_need(body: NeedIn, user: User = Depends(require_role("employer")), db
     )
     db.add(need)
     db.flush()
-    if body.stack:
-        found = db.query(StackTag).filter(StackTag.code.in_(body.stack), StackTag.specialization_id == spec.id).all()
-        for tag in found:
-            db.add(NeedStack(need_id=need.id, tag_id=tag.id, is_required=True))
+    _write_stack(db, need, spec.id, body.stack)
+    _publish_vacancy(db, need, gmin.id)
+    db.commit()
+    return _need_out(db, need)
+
+
+@router.patch("/needs/{need_id}")
+def update_need(need_id: int, body: NeedIn, user: User = Depends(require_role("employer")), db: Session = Depends(get_db)):
+    need = _own_need(db, user, need_id)
+    if _application_count(db, need.id):
+        raise ApiError(409, "HAS_APPLICATIONS", "По вакансии уже есть отклики")
+    salary_min, salary_max = _salary(body.salary_min, body.salary_max)
+    spec = _spec(db, body.specialization_code)
+    gmin = _grade(db, body.grade_min)
+    gmax = _grade(db, body.grade_max)
+    if gmin.rank > gmax.rank:
+        raise ApiError(422, "VALIDATION", "Нижняя граница грейда выше верхней")
+    need.title = body.title.strip()
+    need.team_description = body.team_description.strip()
+    need.specialization_id = spec.id
+    need.grade_min_id = gmin.id
+    need.grade_max_id = gmax.id
+    need.salary_min = salary_min
+    need.salary_max = salary_max
+    need.prefer_fsp = body.prefer_fsp
+    _write_stack(db, need, spec.id, body.stack)
+    _publish_vacancy(db, need, gmin.id)
     db.commit()
     return _need_out(db, need)
 
@@ -173,7 +234,7 @@ def get_need(need_id: int, user: User = Depends(require_role("employer")), db: S
 def _own_need(db: Session, user: User, need_id: int) -> Need:
     need = db.get(Need, need_id)
     if need is None or need.company_id != _company(user).id:
-        raise ApiError(404, "NOT_FOUND", "Потребность не найдена")
+        raise ApiError(404, "NOT_FOUND", "Вакансия не найдена")
     return need
 
 
@@ -270,7 +331,7 @@ def invite(body: InviteIn, user: User = Depends(require_role("employer")), db: S
         .first()
     )
     if existing:
-        raise ApiError(409, "INVITE_EXISTS", "По этой потребности уже есть живое приглашение")
+        raise ApiError(409, "INVITE_EXISTS", "По этой вакансии уже есть живое приглашение")
     row = Invitation(
         company_id=company.id,
         need_id=body.need_id,

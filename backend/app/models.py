@@ -293,6 +293,7 @@ class Vacancy(Base):
     salary_min: Mapped[int] = mapped_column(Integer)
     salary_max: Mapped[int] = mapped_column(Integer)
     is_published: Mapped[bool] = mapped_column(Boolean, default=True)
+    need_id: Mapped[int | None] = mapped_column(ForeignKey("needs.id"), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
