@@ -60,26 +60,21 @@ def test_salary_required_and_contact_opens_after_accept(client):
     missing = client.post(
         "/api/v1/invitations",
         headers=auth(marina),
-        json={"candidate_id": igor["id"], "need_id": need["id"], "body": "Приходите в платежи", "contact_channel": "@marina"},
+        json={"candidate_id": igor["id"], "body": "Приходите в платежи", "contact_channel": "@marina"},
     )
     assert missing.status_code == 422
     assert missing.json()["error"]["code"] == "SALARY_REQUIRED"
     created = client.post(
         "/api/v1/invitations",
         headers=auth(marina),
-        json={
-            "candidate_id": igor["id"],
-            "need_id": need["id"],
-            "body": "Приходите в платежи",
-            "salary_min": 220000,
-            "salary_max": 260000,
-            "contact_channel": "@marina",
-        },
+        json={"candidate_id": igor["id"], "need_id": need["id"]},
     )
     assert created.status_code == 201, created.text
     igor_token = login(client, "igor@example.com")
     invites = client.get("/api/v1/me/invitations", headers=auth(igor_token)).json()
-    assert invites[0]["salary_min"] == 220000
+    assert invites[0]["salary_min"] == need["salary_min"]
+    assert invites[0]["salary_max"] == need["salary_max"]
+    assert invites[0]["contact_channel"] == "marina@example.com"
     assert invites[0]["status"] == "viewed"
     accepted = client.post(f"/api/v1/me/invitations/{invites[0]['id']}/accept", headers=auth(igor_token))
     assert accepted.status_code == 200

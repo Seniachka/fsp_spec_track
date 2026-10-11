@@ -1,5 +1,6 @@
 import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "./auth";
+import { Constellation } from "./constellation";
 
 export function Shell() {
   const { user, logout } = useAuth();
@@ -10,6 +11,7 @@ export function Shell() {
   const brandTo = user?.role === "candidate" ? "/c" : user?.role === "employer" ? "/e" : "/";
   return (
     <>
+      <Constellation />
       <header className="topbar">
         <NavLink to={brandTo} className="brand" end>РАЗ<span>РЯД</span></NavLink>
         <nav className="nav">

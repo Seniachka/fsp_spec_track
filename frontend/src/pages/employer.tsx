@@ -13,7 +13,7 @@ type Spec = { code: string; title: string };
 type Grade = { code: string; title: string; rank: number };
 type Tag = { code: string; title: string };
 
-function Person({ row, onInvite }: { row: any; onInvite?: (row: any) => void }) {
+function Person({ row, onInvite, invited }: { row: any; onInvite?: (row: any) => void; invited?: boolean }) {
   return (
     <article className="person">
       <div className="place">{String(row.rank || "–").padStart(2, "0")}</div>
@@ -27,6 +27,7 @@ function Person({ row, onInvite }: { row: any; onInvite?: (row: any) => void }) 
         {!row.contacts_locked && <p className="ok">{row.email} · {row.telegram}</p>}
       </div>
       {onInvite && <button className="btn-red" onClick={() => onInvite(row)}>Пригласить</button>}
+      {invited && <p className="ok">Отправлено</p>}
     </article>
   );
 }
@@ -207,9 +208,8 @@ export function ShortlistPage() {
   const { specs, grades } = useCatalog();
   const [need, setNeed] = useState<any>(null);
   const [rows, setRows] = useState<any[]>([]);
-  const [target, setTarget] = useState<any>(null);
+  const [invited, setInvited] = useState<number[]>([]);
   const [error, setError] = useState("");
-  const [sent, setSent] = useState("");
   const [editing, setEditing] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [spec, setSpec] = useState("");
@@ -240,21 +240,11 @@ export function ShortlistPage() {
     api<Tag[]>(`/catalog/stack-tags?specialization=${spec}`).then(setTags);
   }, [spec]);
 
-  async function invite(event: FormEvent) {
-    event.preventDefault();
-    const form = new FormData(event.target as HTMLFormElement);
+  async function invite(row: any) {
     setError("");
     try {
-      await api("/invitations", "POST", {
-        candidate_id: target.id,
-        need_id: Number(id),
-        body: form.get("body"),
-        salary_min: Number(form.get("smin")),
-        salary_max: Number(form.get("smax")),
-        contact_channel: form.get("channel"),
-      });
-      setSent(`${target.first_name} ${target.last_name}`);
-      setTarget(null);
+      await api("/invitations", "POST", { candidate_id: row.id, need_id: Number(id) });
+      setInvited((current) => [...current, row.id]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ошибка");
     }
@@ -340,25 +330,11 @@ export function ShortlistPage() {
         </form>
       )}
       {error && <p className="banner">{error}</p>}
-      {sent && <p className="ok">{sent}</p>}
-      {target && (
-        <form className="card stack" onSubmit={invite}>
-          <h3>{target.first_name} {target.last_name}</h3>
-          <label className="field"><span>Текст</span><textarea name="body" required /></label>
-          <div className="grid-2">
-            <label className="field"><span>Вилка от</span><input name="smin" type="number" required defaultValue={need?.salary_min || ""} /></label>
-            <label className="field"><span>Вилка до</span><input name="smax" type="number" required defaultValue={need?.salary_max || ""} /></label>
-          </div>
-          <label className="field"><span>Контакт</span><input name="channel" required /></label>
-          <div className="actions">
-            <button className="btn-ghost" type="button" onClick={() => setTarget(null)}>Отмена</button>
-            <button className="btn-red">Отправить</button>
-          </div>
-        </form>
-      )}
       <h2>Кандидаты</h2>
       <div className="people">
-        {rows.map((row) => <Person key={row.id} row={row} onInvite={setTarget} />)}
+        {rows.map((row) => (
+          <Person key={row.id} row={row} invited={invited.includes(row.id)} onInvite={invited.includes(row.id) ? undefined : invite} />
+        ))}
       </div>
       {confirm && (
         <div className="confirm-backdrop" onClick={() => setConfirm(false)}>

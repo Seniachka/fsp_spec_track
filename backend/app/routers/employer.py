@@ -35,10 +35,10 @@ class NeedIn(BaseModel):
 class InviteIn(BaseModel):
     candidate_id: int
     need_id: int | None = None
-    body: str = Field(min_length=2)
+    body: str = ""
     salary_min: int | None = None
     salary_max: int | None = None
-    contact_channel: str = Field(min_length=2, max_length=160)
+    contact_channel: str = ""
 
 
 class VacancyIn(BaseModel):
@@ -314,12 +314,18 @@ def invite(body: InviteIn, user: User = Depends(require_role("employer")), db: S
     from app.models import CandidateProfile
 
     company = _company(user)
-    salary_min, salary_max = _salary(body.salary_min, body.salary_max)
+    need = _own_need(db, user, body.need_id) if body.need_id is not None else None
+    if body.salary_min is None and body.salary_max is None and need is not None:
+        salary_min, salary_max = need.salary_min, need.salary_max
+    else:
+        salary_min, salary_max = _salary(body.salary_min, body.salary_max)
     profile = db.get(CandidateProfile, body.candidate_id)
     if profile is None or profile.grade_id is None or not profile.published:
         raise ApiError(404, "NOT_FOUND", "Кандидат не найден")
-    if body.need_id is not None:
-        _own_need(db, user, body.need_id)
+    text = body.body.strip() or company.about.strip() or company.name.strip()
+    channel = body.contact_channel.strip() or company.contact_email.strip() or company.name.strip()
+    if len(channel) < 2:
+        raise ApiError(422, "VALIDATION", "Укажите почту компании")
     existing = (
         db.query(Invitation)
         .filter(
@@ -336,10 +342,10 @@ def invite(body: InviteIn, user: User = Depends(require_role("employer")), db: S
         company_id=company.id,
         need_id=body.need_id,
         candidate_id=profile.user_id,
-        body=body.body.strip(),
+        body=text,
         salary_min=salary_min,
         salary_max=salary_max,
-        contact_channel=body.contact_channel.strip(),
+        contact_channel=channel,
         status="sent",
     )
     db.add(row)
