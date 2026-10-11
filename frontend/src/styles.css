@@ -176,6 +176,34 @@ textarea { min-height: 140px; font-family: ui-monospace, Consolas, monospace; }
 .demo-table td { padding: 8px 0; border-top: 1px solid var(--line); vertical-align: top; }
 .status { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
 
+.exam-start { max-width: 680px; }
+.exam-shell { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: start; }
+.exam-side { position: sticky; top: 88px; }
+.timer-digits { font-family: Unbounded, sans-serif; font-size: 42px; letter-spacing: -0.04em; line-height: 1; }
+.timer-digits.warn { color: var(--red); }
+.timer-split { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 13px; }
+.q-map { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; }
+.q-map .q-num { width: 100%; height: 28px; border-radius: 8px; font-size: 11px; }
+.task-link {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: white;
+  border-radius: 12px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.task-link.current { outline: 2px solid var(--ink); }
+.task-link.answered { background: #c4bdb3; }
+.task-link.ok { background: var(--ok); color: white; border-color: var(--ok); }
+.task-link.bad { background: var(--red); color: white; border-color: var(--red); }
+.exam-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.exam-score { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 12px; }
+.exam-score b { font-family: Unbounded, sans-serif; font-size: 28px; }
+.choice.right { border-color: var(--ok); background: #e7f6ee; }
+
 .exam-nav {
   position: sticky;
   top: 73px;
@@ -280,7 +308,8 @@ pre.code {
 }
 
 @media (max-width: 860px) {
-  .hero, .grid-2, .rank { grid-template-columns: 1fr; }
+  .hero, .grid-2, .rank, .exam-shell, .exam-score { grid-template-columns: 1fr; }
+  .exam-side { position: static; }
   .grade-cover { grid-template-columns: 1fr 1fr; }
   .topbar { align-items: flex-start; flex-direction: column; }
   .topbar .spacer { margin-left: 0; }

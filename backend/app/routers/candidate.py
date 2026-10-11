@@ -20,7 +20,16 @@ from app.models import (
     Vacancy,
 )
 from app.security import utcnow
-from app.services.assessment import accept_intern, assemble, confirm_pending, policy, public_session, submit_session
+from app.services.assessment import (
+    accept_intern,
+    assemble,
+    confirm_pending,
+    open_session,
+    policy,
+    public_session,
+    save_answers,
+    submit_session,
+)
 from app.services.code_runner import execute_python, format_python, lint_python
 from app.services.present import candidate_self, replace_stack
 
@@ -66,6 +75,7 @@ class SessionIn(BaseModel):
 class AnswerIn(BaseModel):
     item_id: int
     choice_id: str | None = None
+    choice_ids: list[str] | None = None
     source: str | None = None
 
 
@@ -212,6 +222,23 @@ def intern(user: User = Depends(require_role("candidate")), db: Session = Depend
 def start_session(body: SessionIn, user: User = Depends(require_role("candidate")), db: Session = Depends(get_db)):
     session = assemble(db, _profile(user), body.specialization_code, body.claimed_grade, body.purpose)
     return public_session(db, session)
+
+
+@router.get("/assessments/current")
+def current_session(user: User = Depends(require_role("candidate")), db: Session = Depends(get_db)):
+    session = open_session(db, user.id)
+    if session is None:
+        return {"session": None, "result": None}
+    return {"session": public_session(db, session), "result": None}
+
+
+@router.put("/assessments/sessions/{session_id}/answers")
+def store_answers(session_id: int, body: SubmitIn, user: User = Depends(require_role("candidate")), db: Session = Depends(get_db)):
+    session = db.get(AssessmentSession, session_id)
+    if session is None or session.candidate_id != user.id:
+        raise ApiError(404, "NOT_FOUND", "Попытка не найдена")
+    save_answers(db, session, [item.model_dump() for item in body.answers])
+    return {"saved": True}
 
 
 @router.get("/assessments/sessions/{session_id}")

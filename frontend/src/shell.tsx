@@ -6,21 +6,24 @@ export function Shell() {
   const navigate = useNavigate();
   const links = user?.role === "employer"
     ? [["/e", "Потребности"], ["/e/search", "Банк"], ["/e/invitations", "Приглашения"], ["/e/company", "Компания"]]
-    : [["/c", "Категория"], ["/c/test", "Тест"], ["/c/invitations", "Приглашения"], ["/c/vacancies", "Вакансии"], ["/c/profile", "Профиль"], ["/c/settings", "Настройки"]];
+    : [["/c/invitations", "Приглашения"], ["/c/vacancies", "Вакансии"], ["/c/profile", "Профиль"]];
+  const brandTo = user?.role === "candidate" ? "/c" : user?.role === "employer" ? "/e" : "/";
   return (
     <>
       <header className="topbar">
-        <NavLink to="/" className="brand">РАЗ<span>РЯД</span></NavLink>
+        <NavLink to={brandTo} className="brand" end>РАЗ<span>РЯД</span></NavLink>
         <nav className="nav">
           {user && links.map(([to, label]) => (
-            <NavLink key={to} to={to} end={to === "/c" || to === "/e"}>{label}</NavLink>
+            <NavLink key={to} to={to} end={to === "/e"}>{label}</NavLink>
           ))}
           <NavLink to="/skills" className="nav-public">Навыки и задания</NavLink>
         </nav>
-        <div className="spacer">
-          {user && <span className="who">{user.name}</span>}
-          {user && <button className="btn-ghost" onClick={() => { logout(); navigate("/login"); }}>Выйти</button>}
-        </div>
+        {user?.role === "employer" && (
+          <div className="spacer">
+            <span className="who">{user.name}</span>
+            <button className="btn-ghost" onClick={() => { logout(); navigate("/login"); }}>Выйти</button>
+          </div>
+        )}
       </header>
       <main className="page"><Outlet /></main>
     </>

@@ -101,24 +101,34 @@ def test_failed_test_does_not_assign_grade_and_form_stays_comparable(client):
     )
     assert started.status_code == 201, started.text
     body = started.json()
-    assert len(body["items"]) == 6
-    assert 2.7 <= body["mean_difficulty"] <= 3.3
-    for item in body["items"]:
-        assert "correct" not in item
-        if item["kind"] == "code":
-            assert len(item["public_tests"]) == 5
-            assert item["hidden_count"] == 15
-            assert "hidden" not in item
-            ran = client.post(
-                f"/api/v1/assessments/sessions/{body['id']}/run",
-                headers=auth(token),
-                json={"item_id": item["id"], "source": "def solve(\n", "language": "python3.12"},
-            )
-            assert ran.status_code == 200, ran.text
-            payload = ran.json()
-            assert payload["syntax"]["line"] >= 1
-            assert payload["cases"] == []
-            assert payload["hidden_count"] == 15
+    assert body["duration_minutes"] == 60
+    theory = [item for item in body["items"] if item["section"] == "theory"]
+    practice = [item for item in body["items"] if item["section"] == "practice"]
+    assert len(theory) == 60
+    assert len(practice) == 3
+    grades = {}
+    for item in theory:
+        grades[item["grade"]] = grades.get(item["grade"], 0) + 1
+    assert grades.get("middle") == 42
+    assert grades.get("junior") == 12
+    assert grades.get("senior") == 6
+    assert sum(1 for item in theory if item["soft"]) == 6
+    assert "answer" not in theory[0]
+    for item in practice:
+        assert len(item["public_tests"]) == 5
+        assert item["hidden_count"] == 15
+        assert "hidden" not in item
+    sample = practice[0]
+    ran = client.post(
+        f"/api/v1/assessments/sessions/{body['id']}/run",
+        headers=auth(token),
+        json={"item_id": sample["id"], "source": "def solve(\n", "language": "python3.12"},
+    )
+    assert ran.status_code == 200, ran.text
+    payload = ran.json()
+    assert payload["syntax"]["line"] >= 1
+    assert payload["cases"] == []
+    assert payload["hidden_count"] == 15
     submitted = client.post(
         f"/api/v1/assessments/sessions/{body['id']}/submit",
         headers=auth(token),
