@@ -1,5 +1,0 @@
-export { QrModal } from './QrModal'
-export { QrBadge } from './QrBadge'
-export { QrCamera } from './QrCamera'
-export { QrResult } from './QrResult'
-export { QrSaved } from './QrSaved'

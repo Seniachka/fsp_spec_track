@@ -69,6 +69,7 @@ function Person({ row, onInvite, invited }: { row: any; onInvite?: (row: any) =>
         </div>
         {row.rating && <RatingPanel rating={row.rating} />}
         <div className="chips">{row.stack?.map((tag: any) => <span className="chip" key={tag.code}>{tag.title}</span>)}</div>
+        {row.fsp_empty && <p className="muted">Истории ФСП нет, ранг без этого бонуса</p>}
         {!row.fsp_empty && row.fsp?.slice(0, 2).map((item: any) => (
           <p key={item.competition} className="muted">{item.place ? `${item.place} место` : "Участие"} · {item.discipline} · {item.level}</p>
         ))}
@@ -266,11 +267,12 @@ export function ShortlistPage() {
   const [smax, setSmax] = useState("");
   const [tags, setTags] = useState<Tag[]>([]);
   const [stack, setStack] = useState<string[]>([]);
+  const [fspOnly, setFspOnly] = useState(false);
 
   async function load() {
     const [needRow, people, invites] = await Promise.all([
       api(`/needs/${id}`),
-      api(`/needs/${id}/shortlist`),
+      api(`/needs/${id}/shortlist${fspOnly ? "?fsp_only=true" : ""}`),
       api<any[]>("/invitations"),
     ]);
     setNeed(needRow);
@@ -290,7 +292,7 @@ export function ShortlistPage() {
     setSmax(String(needRow.salary_max ?? ""));
     setStack((needRow.stack || []).map((tag: Tag) => tag.code));
   }
-  useEffect(() => { load().catch((err) => setError(err.message)); }, [id]);
+  useEffect(() => { load().catch((err) => setError(err.message)); }, [id, fspOnly]);
   useEffect(() => {
     if (!spec) return;
     api<Tag[]>(`/catalog/stack-tags?specialization=${spec}`).then(setTags);
@@ -330,7 +332,7 @@ export function ShortlistPage() {
       setNeed(updated);
       setConfirm(false);
       setEditing(false);
-      setRows(await api(`/needs/${id}/shortlist`));
+      setRows(await api(`/needs/${id}/shortlist${fspOnly ? "?fsp_only=true" : ""}`));
     } catch (err) {
       setConfirm(false);
       setError(err instanceof Error ? err.message : "Ошибка");
@@ -390,7 +392,15 @@ export function ShortlistPage() {
         </form>
       )}
       {error && <p className="banner">{error}</p>}
-      <h2>Кандидаты</h2>
+      <div className="vac-head">
+        <h2>Кандидаты</h2>
+        <label className="consent">
+          <input type="checkbox" checked={fspOnly} onChange={(event) => setFspOnly(event.target.checked)} />
+          Только с достижениями ФСП
+        </label>
+      </div>
+      <p className="muted">Фильтр сужает этот список и не меняет вакансию. Снимите галочку — состав вернётся.</p>
+      {rows.length === 0 && <p className="muted">В этой подборке никого нет.</p>}
       <div className="people">
         {rows.map((row) => (
           <Person key={row.id} row={row} invited={invited.includes(row.id)} onInvite={invited.includes(row.id) ? undefined : invite} />
@@ -427,6 +437,76 @@ export function EmployerInvites() {
             {!row.candidate?.contacts_locked && <p className="ok">{row.candidate?.email} · {row.candidate?.telegram}</p>}
           </article>
         ))}
+      </div>
+    </section>
+  );
+}
+
+export function BankSearch() {
+  const { specs, grades } = useCatalog();
+  const [spec, setSpec] = useState("");
+  const [grade, setGrade] = useState("");
+  const [fspOnly, setFspOnly] = useState(false);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [stack, setStack] = useState<string[]>([]);
+  const [rows, setRows] = useState<any[]>([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!spec) {
+      setTags([]);
+      setStack([]);
+      return;
+    }
+    api<Tag[]>(`/catalog/stack-tags?specialization=${spec}`).then((next) => {
+      setTags(next);
+      setStack((current) => current.filter((code) => next.some((tag) => tag.code === code)));
+    });
+  }, [spec]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (spec) params.set("specialization", spec);
+    if (grade) params.set("grade", grade);
+    if (stack.length) params.set("stack", stack.join(","));
+    if (fspOnly) params.set("fsp_only", "true");
+    const query = params.toString();
+    api<any[]>(`/candidates/search${query ? `?${query}` : ""}`)
+      .then(setRows)
+      .catch((err) => setError(err instanceof Error ? err.message : "Ошибка"));
+  }, [spec, grade, stack, fspOnly]);
+
+  return (
+    <section className="stack">
+      <h2>Банк кандидатов</h2>
+      <p className="muted">Все опубликованные категории. Фильтры только сужают список, отдельную вакансию не затирают.</p>
+      {error && <p className="banner">{error}</p>}
+      <div className="card vac-form stack">
+        <div className="grid-2">
+          <label className="field">
+            <span>Специализация</span>
+            <select value={spec} onChange={(event) => setSpec(event.target.value)}>
+              <option value="">Все</option>
+              {specs.map((item) => <option key={item.code} value={item.code}>{item.title}</option>)}
+            </select>
+          </label>
+          <label className="field">
+            <span>Грейд</span>
+            <select value={grade} onChange={(event) => setGrade(event.target.value)}>
+              <option value="">Все</option>
+              {grades.map((item) => <option key={item.code} value={item.code}>{item.title}</option>)}
+            </select>
+          </label>
+        </div>
+        {spec && <SkillPicker tags={tags} value={stack} onChange={setStack} />}
+        <label className="consent">
+          <input type="checkbox" checked={fspOnly} onChange={(event) => setFspOnly(event.target.checked)} />
+          Только с достижениями ФСП
+        </label>
+      </div>
+      {rows.length === 0 && <p className="muted">Никого не нашлось.</p>}
+      <div className="people">
+        {rows.map((row) => <Person key={row.id} row={row} />)}
       </div>
     </section>
   );

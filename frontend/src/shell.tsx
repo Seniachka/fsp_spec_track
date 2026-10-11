@@ -6,7 +6,7 @@ export function Shell() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const links = user?.role === "employer"
-    ? [["/e", "Вакансии"], ["/e/invitations", "Отклики"], ["/e/company", "Компания"]]
+    ? [["/e", "Вакансии"], ["/e/search", "Банк"], ["/e/invitations", "Отклики"], ["/e/company", "Компания"]]
     : [["/c/invitations", "Приглашения"], ["/c/vacancies", "Вакансии"], ["/c/profile", "Профиль"]];
   const brandTo = user?.role === "candidate" ? "/c" : user?.role === "employer" ? "/e" : "/";
   return (

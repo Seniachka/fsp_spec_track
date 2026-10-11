@@ -4,7 +4,7 @@ import { AuthPage, Landing } from "./pages/public";
 import { CandidateHome, CandidateInvites, VacanciesPage } from "./pages/candidate";
 import { TestPage } from "./pages/exam";
 import { ProfileExperience, ProfileLayout, ProfilePersonal, ProfileSkills } from "./pages/profile";
-import { CompanyPage, EmployerHome, EmployerInvites, NeedForm, ShortlistPage } from "./pages/employer";
+import { BankSearch, CompanyPage, EmployerHome, EmployerInvites, NeedForm, ShortlistPage } from "./pages/employer";
 import { SkillsPage } from "./pages/skills";
 
 function NeedRedirect() {
@@ -38,7 +38,7 @@ export function App() {
           <Route path="/e/v/:id" element={<ShortlistPage />} />
           <Route path="/e/needs/new" element={<Navigate to="/e/new" replace />} />
           <Route path="/e/needs/:id" element={<NeedRedirect />} />
-          <Route path="/e/search" element={<Navigate to="/e" replace />} />
+          <Route path="/e/search" element={<BankSearch />} />
           <Route path="/e/invitations" element={<EmployerInvites />} />
           <Route path="/e/company" element={<CompanyPage />} />
         </Route>
